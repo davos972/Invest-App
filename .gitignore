@@ -1,0 +1,17 @@
+# Dépendances installées
+node_modules
+
+# Fichiers générés par la construction
+dist
+dist-ssr
+
+# Secrets / clés d'accès (ne JAMAIS envoyer sur GitHub)
+.env
+.env.local
+.env.*.local
+
+# Fichiers système / éditeurs
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json

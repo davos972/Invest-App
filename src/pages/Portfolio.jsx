@@ -9,6 +9,7 @@ import {
   buildSummary,
 } from '../lib/portfolio.js'
 import { sampleMainAssets } from '../data/sampleAssets.js'
+import { fetchCryptoPrices, isKnownCrypto } from '../lib/prices.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 
 // Couleur verte si gain, rouge si perte.
@@ -84,6 +85,31 @@ export default function Portfolio() {
     }
   }
 
+  const [refreshing, setRefreshing] = useState(false)
+  const [priceMsg, setPriceMsg] = useState(null)
+
+  // Va chercher les prix crypto en direct et met à jour le portefeuille.
+  async function handleRefreshPrices() {
+    const cryptos = holdings.filter((h) => isKnownCrypto(h.ticker))
+    if (cryptos.length === 0) {
+      setPriceMsg('Aucune crypto reconnue à mettre à jour.')
+      return
+    }
+    setRefreshing(true)
+    setPriceMsg(null)
+    const prix = await fetchCryptoPrices(cryptos.map((h) => h.ticker))
+    for (const h of cryptos) {
+      if (prix[h.ticker] != null) {
+        await setPrice(h.ticker, prix[h.ticker], { nom: h.nom, type: h.type })
+      }
+    }
+    setRefreshing(false)
+    setPriceMsg(`✓ ${Object.keys(prix).length} prix crypto mis à jour`)
+    refresh()
+  }
+
+  const aDesCryptos = holdings.some((h) => isKnownCrypto(h.ticker))
+
   return (
     <div>
       <header className="mb-4 flex items-center justify-between gap-3">
@@ -115,6 +141,20 @@ export default function Portfolio() {
           </div>
         </div>
       </section>
+
+      {/* Rafraîchir les prix crypto en direct */}
+      {aDesCryptos && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleRefreshPrices}
+            disabled={refreshing}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-600 disabled:opacity-50"
+          >
+            {refreshing ? 'Mise à jour…' : '🔄 Rafraîchir les prix crypto'}
+          </button>
+          {priceMsg && <span className="text-sm text-emerald-400">{priceMsg}</span>}
+        </div>
+      )}
 
       {/* Formulaire de nouvel investissement */}
       {showForm && (

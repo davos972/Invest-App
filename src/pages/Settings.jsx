@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { getWeights, saveWeights, DEFAULT_WEIGHTS } from '../lib/weights.js'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../lib/useAuth.jsx'
 
 // Page 5 — Réglages.
 // Pour l'instant : la pondération du calculateur. Le reste (devise, compte,
 // génération des recommandations) viendra avec les phases suivantes.
 export default function Settings() {
+  const { user } = useAuth()
   const [weights, setWeights] = useState(() => getWeights())
   const [saved, setSaved] = useState(false)
 
@@ -78,9 +81,23 @@ export default function Settings() {
         </div>
       </section>
 
+      {/* Compte */}
+      <section className="mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+        <h2 className="font-semibold">Compte</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Connecté en tant que <span className="text-slate-200">{user?.email}</span>
+        </p>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="mt-3 rounded-lg border border-rose-500/40 px-4 py-2 text-sm text-rose-300 hover:bg-rose-500/10"
+        >
+          Se déconnecter
+        </button>
+      </section>
+
       <section className="mt-4 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-500">
         🚧 À venir : devise, équilibre sécuritaire / risqué, génération des
-        recommandations, connexion au compte.
+        recommandations.
       </section>
     </div>
   )

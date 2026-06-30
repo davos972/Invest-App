@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getWeights, saveWeights, DEFAULT_WEIGHTS } from '../lib/weights.js'
+import { getPreferences, savePreferences } from '../lib/preferences.js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.jsx'
 
@@ -10,6 +11,14 @@ export default function Settings() {
   const { user } = useAuth()
   const [weights, setWeights] = useState(() => getWeights())
   const [saved, setSaved] = useState(false)
+  const [prefs, setPrefs] = useState(() => getPreferences())
+
+  // Met à jour une préférence et l'enregistre tout de suite.
+  function updatePref(key, value) {
+    const next = { ...prefs, [key]: value }
+    setPrefs(next)
+    savePreferences(next)
+  }
 
   function updateWeight(level, value) {
     const number = parseInt(value, 10)
@@ -81,6 +90,67 @@ export default function Settings() {
         </div>
       </section>
 
+      {/* Préférences */}
+      <section className="mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+        <h2 className="font-semibold">Préférences</h2>
+
+        {/* Équilibre sécuritaire / risqué */}
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between text-sm">
+            <span>Équilibre visé</span>
+            <span className="text-slate-400">
+              {prefs.equilibre}% sûr · {100 - prefs.equilibre}% risqué
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={prefs.equilibre}
+            onChange={(e) => updatePref('equilibre', Number(e.target.value))}
+            className="w-full accent-emerald-500"
+          />
+        </div>
+
+        {/* Devise */}
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-sm">Devise</span>
+          <select
+            value={prefs.devise}
+            onChange={(e) => updatePref('devise', e.target.value)}
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-400"
+          >
+            <option value="CAD">CAD ($ canadien)</option>
+          </select>
+        </div>
+
+        {/* Sections de l'accueil ouvertes par défaut */}
+        <label className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-sm">Sections de l'accueil dépliées par défaut</span>
+          <input
+            type="checkbox"
+            checked={prefs.sectionsOuvertes}
+            onChange={(e) => updatePref('sectionsOuvertes', e.target.checked)}
+            className="h-5 w-5 accent-emerald-500"
+          />
+        </label>
+
+        {/* Génération automatique / manuelle */}
+        <label className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-sm">
+            Génération automatique le lundi
+            <span className="block text-xs text-slate-500">Sinon, bouton manuel (Phase 2)</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={prefs.generationAuto}
+            onChange={(e) => updatePref('generationAuto', e.target.checked)}
+            className="h-5 w-5 accent-emerald-500"
+          />
+        </label>
+      </section>
+
       {/* Compte */}
       <section className="mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
         <h2 className="font-semibold">Compte</h2>
@@ -93,11 +163,6 @@ export default function Settings() {
         >
           Se déconnecter
         </button>
-      </section>
-
-      <section className="mt-4 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-500">
-        🚧 À venir : devise, équilibre sécuritaire / risqué, génération des
-        recommandations.
       </section>
     </div>
   )

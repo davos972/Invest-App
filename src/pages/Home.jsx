@@ -1,4 +1,5 @@
 import { homeSections } from '../data/sampleAssets.js'
+import { getPreferences } from '../lib/preferences.js'
 import CollapsibleSection from '../components/CollapsibleSection.jsx'
 import AssetCard from '../components/AssetCard.jsx'
 
@@ -6,6 +7,7 @@ import AssetCard from '../components/AssetCard.jsx'
 // Pour l'instant alimentée par des données d'exemple ; l'IA (Phase 2)
 // remplacera ces données par de vraies recommandations.
 export default function Home() {
+  const prefs = getPreferences()
   // Les métaux sont présentés comme un classement (1, 2, 3, 4).
   const isMetaux = (key) => key === 'metaux'
 
@@ -35,7 +37,7 @@ export default function Home() {
           key={section.key}
           titre={section.titre}
           count={`${section.items.length}`}
-          defaultOpen={!['mentions'].includes(section.key)}
+          defaultOpen={prefs.sectionsOuvertes && section.key !== 'mentions'}
         >
           {section.items.map((asset, i) => (
             <AssetCard key={asset.id} asset={asset} rang={isMetaux(section.key) ? i + 1 : null} />

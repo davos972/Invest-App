@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { sampleMainAssets, sampleHonorableMentions } from '../data/sampleAssets.js'
 import { getWeights } from '../lib/weights.js'
+import { saveSession } from '../lib/sessions.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 import ConfidenceBadge from '../components/ConfidenceBadge.jsx'
 
@@ -51,6 +52,23 @@ export default function Calculator() {
     e.preventDefault()
     const value = parseFloat(amountInput.replace(',', '.'))
     setAmount(Number.isFinite(value) && value > 0 ? value : 0)
+    setSavedMsg(null)
+  }
+
+  const [savedMsg, setSavedMsg] = useState(null)
+
+  async function handleSaveSession() {
+    await saveSession(amount, {
+      lignes: allocations.map((a) => ({
+        id: a.id,
+        nom: a.nom,
+        ticker: a.ticker,
+        confiance: a.confiance,
+        montant: a.montant,
+      })),
+      weights,
+    })
+    setSavedMsg('✓ Calcul enregistré')
   }
 
   return (
@@ -144,6 +162,19 @@ export default function Calculator() {
           {formatCAD(allocations.reduce((sum, a) => sum + a.montant, 0))}
         </span>
       </div>
+
+      {/* Enregistrer le calcul */}
+      {amount > 0 && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={handleSaveSession}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-600"
+          >
+            Enregistrer ce calcul
+          </button>
+          {savedMsg && <span className="text-sm text-emerald-400">{savedMsg}</span>}
+        </div>
+      )}
     </div>
   )
 }

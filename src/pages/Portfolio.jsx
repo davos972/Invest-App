@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   getTransactions,
   addTransaction,
@@ -22,11 +22,26 @@ const emptyForm = { nom: '', ticker: '', type: 'action', quantite: '', prixAchat
 
 // Page 4 — Portefeuille & historique.
 export default function Portfolio() {
-  // On relit les données du navigateur. "version" force le rafraîchissement
-  // après chaque ajout / suppression.
+  // "version" force le rechargement des données après chaque modification.
   const [version, setVersion] = useState(0)
-  const transactions = useMemo(() => getTransactions(), [version])
-  const prices = useMemo(() => getPrices(), [version])
+  const [transactions, setTransactions] = useState([])
+  const [prices, setPrices] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  // Charge les données (cloud ou navigateur) à l'ouverture et après chaque modif.
+  useEffect(() => {
+    let actif = true
+    setLoading(true)
+    Promise.all([getTransactions(), getPrices()]).then(([tx, pr]) => {
+      if (!actif) return
+      setTransactions(tx)
+      setPrices(pr)
+      setLoading(false)
+    })
+    return () => {
+      actif = false
+    }
+  }, [version])
 
   const holdings = useMemo(() => buildHoldings(transactions, prices), [transactions, prices])
   const summary = useMemo(() => buildSummary(holdings), [holdings])
@@ -45,10 +60,10 @@ export default function Portfolio() {
     }
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!form.nom || !form.quantite || !form.prixAchat) return
-    addTransaction({
+    await addTransaction({
       nom: form.nom,
       ticker: form.ticker || form.nom,
       type: form.type,
@@ -61,10 +76,10 @@ export default function Portfolio() {
     refresh()
   }
 
-  function handleSetPrice(ticker, value) {
+  async function handleSetPrice(holding, value) {
     const price = parseFloat(String(value).replace(',', '.'))
     if (Number.isFinite(price)) {
-      setPrice(ticker, price)
+      await setPrice(holding.ticker, price, { nom: holding.nom, type: holding.type })
       refresh()
     }
   }
@@ -155,7 +170,11 @@ export default function Portfolio() {
       )}
 
       {/* Liste des placements détenus */}
-      {holdings.length === 0 ? (
+      {loading ? (
+        <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-500">
+          Chargement…
+        </div>
+      ) : holdings.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-500">
           Aucun investissement pour l'instant. Clique sur « Nouvel investissement ».
         </div>
@@ -196,7 +215,7 @@ export default function Portfolio() {
                         step="any"
                         defaultValue={prices[h.ticker] ?? ''}
                         placeholder={h.prixMoyen.toFixed(2)}
-                        onBlur={(e) => handleSetPrice(h.ticker, e.target.value)}
+                        onBlur={(e) => handleSetPrice(h, e.target.value)}
                         className="w-28 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 outline-none focus:border-emerald-400"
                       />
                       <span className="text-xs text-slate-500">
@@ -215,8 +234,8 @@ export default function Portfolio() {
                             {t.quantite} × {formatCAD(t.prixAchat)}
                           </span>
                           <button
-                            onClick={() => {
-                              deleteTransaction(t.id)
+                            onClick={async () => {
+                              await deleteTransaction(t.id)
                               refresh()
                             }}
                             className="text-xs text-rose-400 hover:underline"

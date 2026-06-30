@@ -1,54 +1,121 @@
-// Gestion du portefeuille, sauvegardé pour l'instant dans le navigateur
-// (localStorage). En Phase 0/1, on remplacera ce fichier par Supabase
-// sans toucher à l'apparence des pages.
+// Accès aux données du portefeuille.
+// Deux modes :
+//  - Supabase (cloud, multi-appareils) dès que les clés sont configurées,
+//  - sinon repli sur le navigateur (localStorage) pour ne rien casser.
+import { supabase, isSupabaseConfigured } from './supabase.js'
 
 const TX_KEY = 'portfolio_transactions'
 const PRICES_KEY = 'portfolio_prices'
 
-function read(key) {
+// Identifiant de l'utilisateur connecté (nécessaire pour les écritures Supabase).
+async function currentUserId() {
+  const { data } = await supabase.auth.getUser()
+  return data?.user?.id ?? null
+}
+
+// --- Lecture / écriture du navigateur (mode repli) ---
+
+function readLocal(key) {
   try {
-    return JSON.parse(localStorage.getItem(key)) || []
+    return JSON.parse(localStorage.getItem(key)) || (key === PRICES_KEY ? {} : [])
   } catch {
-    return []
+    return key === PRICES_KEY ? {} : []
   }
 }
 
 // --- Transactions (chaque achat journalisé) ---
 
-// Une transaction = { id, nom, ticker, type, quantite, prixAchat, date }
-export function getTransactions() {
-  return read(TX_KEY)
+export async function getTransactions() {
+  if (!isSupabaseConfigured) return readLocal(TX_KEY)
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: true })
+
+  if (error) {
+    console.error('Lecture des transactions échouée :', error.message)
+    return []
+  }
+  // On ramène les données au format utilisé par l'application.
+  return data.map((t) => ({
+    id: t.id,
+    nom: t.nom,
+    ticker: t.ticker,
+    type: t.type,
+    quantite: Number(t.quantite),
+    prixAchat: Number(t.prix_achat),
+    date: t.date,
+  }))
 }
 
-export function addTransaction(tx) {
-  const list = getTransactions()
-  const entry = { ...tx, id: crypto.randomUUID() }
-  localStorage.setItem(TX_KEY, JSON.stringify([...list, entry]))
-  return entry
+export async function addTransaction(tx) {
+  if (!isSupabaseConfigured) {
+    const list = readLocal(TX_KEY)
+    const entry = { ...tx, id: crypto.randomUUID() }
+    localStorage.setItem(TX_KEY, JSON.stringify([...list, entry]))
+    return entry
+  }
+
+  const user_id = await currentUserId()
+  const { error } = await supabase.from('transactions').insert({
+    user_id,
+    nom: tx.nom,
+    ticker: tx.ticker,
+    type: tx.type,
+    quantite: tx.quantite,
+    prix_achat: tx.prixAchat,
+    date: tx.date,
+  })
+  if (error) console.error('Ajout de transaction échoué :', error.message)
 }
 
-export function deleteTransaction(id) {
-  const list = getTransactions().filter((t) => t.id !== id)
-  localStorage.setItem(TX_KEY, JSON.stringify(list))
+export async function deleteTransaction(id) {
+  if (!isSupabaseConfigured) {
+    const list = readLocal(TX_KEY).filter((t) => t.id !== id)
+    localStorage.setItem(TX_KEY, JSON.stringify(list))
+    return
+  }
+  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  if (error) console.error('Suppression de transaction échouée :', error.message)
 }
 
-// --- Prix actuels (saisis à la main en attendant les APIs de prix) ---
+// --- Prix actuels (table "portfolio") ---
 
-export function getPrices() {
-  try {
-    return JSON.parse(localStorage.getItem(PRICES_KEY)) || {}
-  } catch {
+export async function getPrices() {
+  if (!isSupabaseConfigured) return readLocal(PRICES_KEY)
+
+  const { data, error } = await supabase.from('portfolio').select('ticker, prix_actuel')
+  if (error) {
+    console.error('Lecture des prix échouée :', error.message)
     return {}
   }
+  const prices = {}
+  for (const row of data) {
+    if (row.prix_actuel != null) prices[row.ticker] = Number(row.prix_actuel)
+  }
+  return prices
 }
 
-export function setPrice(ticker, price) {
-  const prices = getPrices()
-  prices[ticker] = price
-  localStorage.setItem(PRICES_KEY, JSON.stringify(prices))
+export async function setPrice(ticker, price, extra = {}) {
+  if (!isSupabaseConfigured) {
+    const prices = readLocal(PRICES_KEY)
+    prices[ticker] = price
+    localStorage.setItem(PRICES_KEY, JSON.stringify(prices))
+    return
+  }
+
+  const user_id = await currentUserId()
+  const { error } = await supabase
+    .from('portfolio')
+    .upsert(
+      { user_id, ticker, nom: extra.nom, type: extra.type, prix_actuel: price, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,ticker' },
+    )
+  if (error) console.error('Enregistrement du prix échoué :', error.message)
 }
 
-// --- Calcul des positions détenues à partir des transactions ---
+// --- Calcul des positions détenues (fonctions pures, inchangées) ---
 
 // Regroupe les transactions par placement et calcule, pour chacun :
 // quantité totale, prix moyen d'achat, coût total, valeur actuelle, gain/perte.
@@ -73,7 +140,7 @@ export function buildHoldings(transactions, prices) {
     g.transactions.push(t)
   }
 
-  const holdings = Object.values(groups).map((g) => {
+  return Object.values(groups).map((g) => {
     const prixMoyen = g.quantite > 0 ? g.coutTotal / g.quantite : 0
     const prixActuel = prices[g.ticker] != null ? Number(prices[g.ticker]) : prixMoyen
     const valeurActuelle = g.quantite * prixActuel
@@ -81,8 +148,6 @@ export function buildHoldings(transactions, prices) {
     const pnlPct = g.coutTotal > 0 ? (pnl / g.coutTotal) * 100 : 0
     return { ...g, prixMoyen, prixActuel, valeurActuelle, pnl, pnlPct }
   })
-
-  return holdings
 }
 
 // Totaux du portefeuille (vue d'ensemble en haut de page).

@@ -50,3 +50,18 @@ export async function fetchCryptoPrices(tickers) {
 export function isKnownCrypto(ticker) {
   return Boolean(COINGECKO_IDS[String(ticker).toUpperCase()])
 }
+
+// Va chercher les prix des actions / métaux en CAD, via notre programme
+// serveur (qui utilise la clé FMP secrète). Renvoie { TICKER: prix_cad }.
+export async function fetchStockPrices(tickers) {
+  const list = tickers.filter(Boolean)
+  if (list.length === 0) return {}
+  try {
+    const res = await fetch(`/api/stock-prices?tickers=${encodeURIComponent(list.join(','))}`)
+    if (!res.ok) throw new Error(`/api/stock-prices a répondu ${res.status}`)
+    return await res.json()
+  } catch (err) {
+    console.error('Récupération des prix actions/métaux échouée :', err.message)
+    return {}
+  }
+}

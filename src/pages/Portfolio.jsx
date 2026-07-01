@@ -9,7 +9,7 @@ import {
   buildSummary,
 } from '../lib/portfolio.js'
 import { sampleMainAssets } from '../data/sampleAssets.js'
-import { fetchCryptoPrices, isKnownCrypto } from '../lib/prices.js'
+import { fetchCryptoPrices, fetchStockPrices, isKnownCrypto } from '../lib/prices.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 
 // Couleur verte si gain, rouge si perte.
@@ -88,27 +88,31 @@ export default function Portfolio() {
   const [refreshing, setRefreshing] = useState(false)
   const [priceMsg, setPriceMsg] = useState(null)
 
-  // Va chercher les prix crypto en direct et met à jour le portefeuille.
+  // Va chercher les prix en direct (crypto + actions/métaux) et met à jour
+  // le portefeuille.
   async function handleRefreshPrices() {
-    const cryptos = holdings.filter((h) => isKnownCrypto(h.ticker))
-    if (cryptos.length === 0) {
-      setPriceMsg('Aucune crypto reconnue à mettre à jour.')
-      return
-    }
+    if (holdings.length === 0) return
     setRefreshing(true)
     setPriceMsg(null)
-    const prix = await fetchCryptoPrices(cryptos.map((h) => h.ticker))
-    for (const h of cryptos) {
+
+    const cryptoTickers = holdings.filter((h) => isKnownCrypto(h.ticker)).map((h) => h.ticker)
+    const autresTickers = holdings.filter((h) => !isKnownCrypto(h.ticker)).map((h) => h.ticker)
+
+    const [cryptoPrix, autresPrix] = await Promise.all([
+      fetchCryptoPrices(cryptoTickers),
+      fetchStockPrices(autresTickers),
+    ])
+    const prix = { ...cryptoPrix, ...autresPrix }
+
+    for (const h of holdings) {
       if (prix[h.ticker] != null) {
         await setPrice(h.ticker, prix[h.ticker], { nom: h.nom, type: h.type })
       }
     }
     setRefreshing(false)
-    setPriceMsg(`✓ ${Object.keys(prix).length} prix crypto mis à jour`)
+    setPriceMsg(`✓ ${Object.keys(prix).length} prix mis à jour`)
     refresh()
   }
-
-  const aDesCryptos = holdings.some((h) => isKnownCrypto(h.ticker))
 
   return (
     <div>
@@ -142,15 +146,15 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Rafraîchir les prix crypto en direct */}
-      {aDesCryptos && (
+      {/* Rafraîchir les prix en direct (crypto + actions/métaux) */}
+      {holdings.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <button
             onClick={handleRefreshPrices}
             disabled={refreshing}
             className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-600 disabled:opacity-50"
           >
-            {refreshing ? 'Mise à jour…' : '🔄 Rafraîchir les prix crypto'}
+            {refreshing ? 'Mise à jour…' : '🔄 Rafraîchir les prix'}
           </button>
           {priceMsg && <span className="text-sm text-emerald-400">{priceMsg}</span>}
         </div>

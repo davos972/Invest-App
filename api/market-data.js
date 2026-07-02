@@ -4,13 +4,25 @@ import { STOCKS, CRYPTOS, METALS } from './candidates.js'
 
 const FMP = 'https://financialmodelingprep.com/stable'
 
-// Petit utilitaire : récupère du JSON sans jamais planter.
-async function getJson(url) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// Récupère du JSON sans jamais planter. Réessaie en cas de blocage temporaire
+// (429 « trop de demandes ») ou de coupure réseau — mais pas sur un vrai refus
+// (403/404), inutile d'insister.
+async function getJson(url, attempt = 0) {
   try {
     const r = await fetch(url)
+    if (r.status === 429 && attempt < 3) {
+      await sleep(800 * (attempt + 1))
+      return getJson(url, attempt + 1)
+    }
     if (!r.ok) return null
     return await r.json()
   } catch {
+    if (attempt < 2) {
+      await sleep(500)
+      return getJson(url, attempt + 1)
+    }
     return null
   }
 }
@@ -43,15 +55,13 @@ async function fetchUsdToCad() {
 // Fondamentaux d'une action (best effort : les champs absents restent nuls,
 // le prompt gère l'absence en abaissant la confiance).
 async function fetchStock(symbol, key, rate) {
-  const [quoteArr, ratiosArr, kmArr] = await Promise.all([
-    getJson(`${FMP}/quote?symbol=${symbol}&apikey=${key}`),
-    getJson(`${FMP}/ratios-ttm?symbol=${symbol}&apikey=${key}`),
-    getJson(`${FMP}/key-metrics-ttm?symbol=${symbol}&apikey=${key}`),
-  ])
-  const q = first(quoteArr)
-  const r = first(ratiosArr) || {}
-  const km = first(kmArr) || {}
+  // Le cours d'abord (endpoint gratuit et fiable). S'il est absent, inutile
+  // d'appeler les fondamentaux : on abandonne ce titre.
+  const q = first(await getJson(`${FMP}/quote?symbol=${symbol}&apikey=${key}`))
   if (!q) return null
+  // Puis les fondamentaux, un par un (pour ne pas surcharger FMP).
+  const r = first(await getJson(`${FMP}/ratios-ttm?symbol=${symbol}&apikey=${key}`)) || {}
+  const km = first(await getJson(`${FMP}/key-metrics-ttm?symbol=${symbol}&apikey=${key}`)) || {}
 
   return {
     nom: q.name || symbol,
@@ -119,13 +129,16 @@ async function fetchCryptos() {
 }
 
 // Rassemble toutes les données de marché.
+// La crypto (CoinGecko) tourne en parallèle ; les appels FMP sont séquencés et
+// peu nombreux à la fois, pour rester sous les limites du plan gratuit FMP.
 export async function gatherMarketData(fmpKey) {
   const rate = await fetchUsdToCad()
-  const [actions, metaux, crypto] = await Promise.all([
-    mapPool(STOCKS, 6, (s) => fetchStock(s, fmpKey, rate)),
-    mapPool(METALS, 4, (m) => fetchMetal(m, fmpKey, rate)),
-    fetchCryptos(),
-  ])
+  const cryptoPromise = fetchCryptos()
+
+  const actions = await mapPool(STOCKS, 3, (s) => fetchStock(s, fmpKey, rate))
+  const metaux = await mapPool(METALS, 3, (m) => fetchMetal(m, fmpKey, rate))
+  const crypto = await cryptoPromise
+
   return {
     taux_usd_cad: +rate.toFixed(4),
     actions: actions.filter(Boolean),

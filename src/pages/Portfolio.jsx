@@ -9,6 +9,7 @@ import {
   buildSummary,
 } from '../lib/portfolio.js'
 import { sampleMainAssets } from '../data/sampleAssets.js'
+import { getLatestRecommendation, mainAssets } from '../lib/recommendations.js'
 import { fetchCryptoPrices, fetchStockPrices, isKnownCrypto } from '../lib/prices.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 
@@ -51,11 +52,20 @@ export default function Portfolio() {
   const [form, setForm] = useState(emptyForm)
   const [expanded, setExpanded] = useState(null)
 
+  // Placements proposés dans le formulaire : les vrais de la semaine si dispo,
+  // sinon les exemples.
+  const [candidateAssets, setCandidateAssets] = useState(sampleMainAssets)
+  useEffect(() => {
+    getLatestRecommendation().then((reco) => {
+      if (reco) setCandidateAssets(mainAssets(reco))
+    })
+  }, [])
+
   const refresh = () => setVersion((v) => v + 1)
 
-  // Pré-remplit le formulaire quand on choisit un placement d'exemple.
+  // Pré-remplit le formulaire quand on choisit un placement proposé.
   function pickSample(id) {
-    const asset = sampleMainAssets.find((a) => a.id === id)
+    const asset = candidateAssets.find((a) => a.id === id)
     if (asset) {
       setForm((f) => ({ ...f, nom: asset.nom, ticker: asset.ticker, type: asset.type }))
     }
@@ -168,7 +178,7 @@ export default function Portfolio() {
         >
           <div>
             <label className="mb-1 block text-xs text-slate-400">
-              Choisir un placement d'exemple (optionnel)
+              Choisir un placement recommandé (optionnel)
             </label>
             <select
               onChange={(e) => pickSample(e.target.value)}
@@ -176,7 +186,7 @@ export default function Portfolio() {
               className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 outline-none focus:border-emerald-400"
             >
               <option value="">— Saisie manuelle —</option>
-              {sampleMainAssets.map((a) => (
+              {candidateAssets.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.nom} ({a.ticker})
                 </option>

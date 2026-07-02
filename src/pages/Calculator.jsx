@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { sampleMainAssets, sampleHonorableMentions } from '../data/sampleAssets.js'
+import { getLatestRecommendation, mainAssets, honorableMentions } from '../lib/recommendations.js'
 import { getWeights } from '../lib/weights.js'
 import { saveSession } from '../lib/sessions.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
@@ -7,26 +8,37 @@ import ConfidenceBadge from '../components/ConfidenceBadge.jsx'
 
 // Page 3 — Calculateur d'allocation (Logique B : points pondérés).
 export default function Calculator() {
-  // Montant à répartir, saisi par l'utilisateur.
   const [amountInput, setAmountInput] = useState('')
-  // Montant "validé" au clic sur Calculer (sépare la saisie du calcul affiché).
   const [amount, setAmount] = useState(0)
-  // Faut-il aussi proposer les mentions honorables ?
   const [showMentions, setShowMentions] = useState(false)
+  const [savedMsg, setSavedMsg] = useState(null)
 
-  // Pondération choisie dans les Réglages (relue à chaque ouverture de la page).
+  // Pondération choisie dans les Réglages.
   const weights = useMemo(() => getWeights(), [])
 
-  // La liste des placements proposés (+ mentions honorables si demandé).
-  const assets = useMemo(
-    () => (showMentions ? [...sampleMainAssets, ...sampleHonorableMentions] : sampleMainAssets),
-    [showMentions],
+  // Recommandations réelles (repli sur les exemples si aucune génération).
+  const [reco, setReco] = useState(null)
+  useEffect(() => {
+    getLatestRecommendation().then(setReco)
+  }, [])
+
+  const usingSample = !reco
+  const mainList = useMemo(() => (reco ? mainAssets(reco) : sampleMainAssets), [reco])
+  const mentionsList = useMemo(
+    () => (reco ? honorableMentions(reco) : sampleHonorableMentions),
+    [reco],
   )
 
-  // Quels placements sont cochés. Par défaut : tous les placements principaux.
-  const [selected, setSelected] = useState(() =>
-    new Set(sampleMainAssets.map((a) => a.id)),
+  const assets = useMemo(
+    () => (showMentions ? [...mainList, ...mentionsList] : mainList),
+    [showMentions, mainList, mentionsList],
   )
+
+  // Par défaut : tous les placements principaux cochés. Recalculé si la liste change.
+  const [selected, setSelected] = useState(() => new Set())
+  useEffect(() => {
+    setSelected(new Set(mainList.map((a) => a.id)))
+  }, [mainList])
 
   function toggle(id) {
     setSelected((prev) => {
@@ -36,8 +48,7 @@ export default function Calculator() {
     })
   }
 
-  // Cœur de la Logique B : on additionne les points des placements cochés,
-  // puis chaque placement reçoit sa part proportionnelle de la somme.
+  // Logique B : chaque actif reçoit sa part proportionnelle à ses points.
   const allocations = useMemo(() => {
     const chosen = assets.filter((a) => selected.has(a.id))
     const totalPoints = chosen.reduce((sum, a) => sum + (weights[a.confiance] || 0), 0)
@@ -54,8 +65,6 @@ export default function Calculator() {
     setAmount(Number.isFinite(value) && value > 0 ? value : 0)
     setSavedMsg(null)
   }
-
-  const [savedMsg, setSavedMsg] = useState(null)
 
   async function handleSaveSession() {
     await saveSession(amount, {
@@ -81,7 +90,6 @@ export default function Calculator() {
         </p>
       </header>
 
-      {/* Saisie du montant */}
       <form onSubmit={handleCalculer} className="mb-6 flex flex-wrap items-end gap-3">
         <label className="flex-1 min-w-[180px]">
           <span className="mb-1 block text-sm text-slate-400">Somme à investir (CAD)</span>
@@ -104,13 +112,13 @@ export default function Calculator() {
         </button>
       </form>
 
-      {/* Note d'exemple tant que l'IA n'est pas branchée */}
-      <p className="mb-4 rounded-lg bg-slate-900 px-3 py-2 text-xs text-slate-500">
-        ℹ️ Placements d'exemple (données fictives). Les vraies recommandations
-        arriveront avec l'IA en Phase 2.
-      </p>
+      {usingSample && (
+        <p className="mb-4 rounded-lg bg-slate-900 px-3 py-2 text-xs text-slate-500">
+          ℹ️ Placements d'exemple (données fictives). Génère les recommandations
+          depuis l'accueil pour utiliser les vrais placements.
+        </p>
+      )}
 
-      {/* Résultat : liste des placements + part allouée */}
       <div className="space-y-2">
         {allocations.map((a) => (
           <label
@@ -143,7 +151,6 @@ export default function Calculator() {
         ))}
       </div>
 
-      {/* Bouton pour ajouter les mentions honorables */}
       {!showMentions && (
         <button
           onClick={() => setShowMentions(true)}
@@ -153,7 +160,6 @@ export default function Calculator() {
         </button>
       )}
 
-      {/* Total de contrôle */}
       <div className="mt-6 flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3">
         <span className="text-sm text-slate-400">
           Total réparti ({selected.size} placement{selected.size > 1 ? 's' : ''})
@@ -163,7 +169,6 @@ export default function Calculator() {
         </span>
       </div>
 
-      {/* Enregistrer le calcul */}
       {amount > 0 && (
         <div className="mt-3 flex items-center gap-3">
           <button

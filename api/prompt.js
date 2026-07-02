@@ -66,7 +66,12 @@ Taux de change USD -> CAD utilisé : ${data.taux_usd_cad}
 
 CONTEXTE MACRO : non fourni cette semaine (ne pas inventer de contexte macro).
 
-DONNÉES ACTIONS (prix en CAD ; les pourcentages de marge/ROE/ROIC sont déjà en %) :
+DONNÉES ACTIONS (prix en CAD). Cette semaine tu disposes, pour chaque action, du
+cours, de la variation du jour, des moyennes 50/200 jours, de la capitalisation,
+du ratio cours/bénéfice (P/E) et du bénéfice par action. C'est le jeu de données
+NORMAL attendu : base ton analyse sur la valorisation (P/E), la taille et la
+tendance. Ne considère PAS l'absence de marges/ROIC/dette comme des « données
+incomplètes » et n'abaisse pas la confiance pour cette raison :
 ${JSON.stringify(data.actions, null, 1)}
 
 DONNÉES CRYPTO (prix et montants en CAD ; tier = niveau de solidité) :

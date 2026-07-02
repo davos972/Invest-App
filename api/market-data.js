@@ -1,19 +1,19 @@
 // Récupération des données de marché réelles pour l'analyse IA.
-// Tout se passe côté serveur (les clés restent secrètes).
+// Objectif : très peu d'appels FMP (offre gratuite = 250/jour), en récupérant
+// tous les cours d'un seul coup (requête groupée).
 import { STOCKS, CRYPTOS, METALS } from './candidates.js'
 
-const FMP = 'https://financialmodelingprep.com/stable'
+const FMP = 'https://financialmodelingprep.com'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-// Récupère du JSON sans jamais planter. Réessaie en cas de blocage temporaire
-// (429 « trop de demandes ») ou de coupure réseau — mais pas sur un vrai refus
-// (403/404), inutile d'insister.
+// Récupère du JSON sans jamais planter. Réessaie sur 429 (blocage temporaire)
+// ou coupure réseau, pas sur un vrai refus (403/404).
 async function getJson(url, attempt = 0) {
   try {
     const r = await fetch(url)
-    if (r.status === 429 && attempt < 3) {
-      await sleep(800 * (attempt + 1))
+    if (r.status === 429 && attempt < 2) {
+      await sleep(1000 * (attempt + 1))
       return getJson(url, attempt + 1)
     }
     if (!r.ok) return null
@@ -27,23 +27,6 @@ async function getJson(url, attempt = 0) {
   }
 }
 
-// Exécute une tâche sur une liste, avec un nombre limité d'appels en parallèle
-// (pour ne pas saturer l'API FMP).
-async function mapPool(items, limit, fn) {
-  const out = new Array(items.length)
-  let index = 0
-  async function worker() {
-    while (index < items.length) {
-      const i = index++
-      out[i] = await fn(items[i])
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
-  return out
-}
-
-const first = (arr) => (Array.isArray(arr) && arr.length ? arr[0] : null)
-const pct = (v) => (v != null && Number.isFinite(v) ? +(v * 100).toFixed(1) : null)
 const cad = (v, rate) => (v != null && Number.isFinite(v) ? +(v * rate).toFixed(2) : null)
 
 // Taux USD -> CAD (gratuit, sans clé).
@@ -52,48 +35,22 @@ async function fetchUsdToCad() {
   return fx?.rates?.CAD || 1
 }
 
-// Fondamentaux d'une action (best effort : les champs absents restent nuls,
-// le prompt gère l'absence en abaissant la confiance).
-async function fetchStock(symbol, key, rate) {
-  // Le cours d'abord (endpoint gratuit et fiable). S'il est absent, inutile
-  // d'appeler les fondamentaux : on abandonne ce titre.
-  const q = first(await getJson(`${FMP}/quote?symbol=${symbol}&apikey=${key}`))
-  if (!q) return null
-  // Puis les fondamentaux, un par un (pour ne pas surcharger FMP).
-  const r = first(await getJson(`${FMP}/ratios-ttm?symbol=${symbol}&apikey=${key}`)) || {}
-  const km = first(await getJson(`${FMP}/key-metrics-ttm?symbol=${symbol}&apikey=${key}`)) || {}
-
-  return {
-    nom: q.name || symbol,
-    ticker: symbol,
-    prix_cad: cad(q.price, rate),
-    variation_jour_pct: q.changePercentage ?? q.changesPercentage ?? null,
-    moyenne_50j_cad: cad(q.priceAvg50, rate),
-    moyenne_200j_cad: cad(q.priceAvg200, rate),
-    market_cap_usd: q.marketCap ?? null,
-    per: q.pe ?? r.priceToEarningsRatioTTM ?? null,
-    peg: r.priceToEarningsGrowthRatioTTM ?? r.pegRatioTTM ?? null,
-    marge_nette_pct: pct(r.netProfitMarginTTM),
-    marge_operationnelle_pct: pct(r.operatingProfitMarginTTM),
-    roe_pct: pct(r.returnOnEquityTTM),
-    roic_pct: pct(km.returnOnInvestedCapitalTTM ?? r.returnOnInvestedCapitalTTM),
-    dette_sur_ebitda: r.netDebtToEBITDATTM ?? km.netDebtToEBITDATTM ?? null,
-    fcf_par_action: km.freeCashFlowPerShareTTM ?? null,
+// TOUS les cours (actions + métaux) en un seul appel groupé.
+async function fetchQuotesBatch(symbols, key) {
+  const list = symbols.join(',')
+  const urls = [
+    `${FMP}/stable/quote?symbol=${list}&apikey=${key}`,
+    `${FMP}/api/v3/quote/${list}?apikey=${key}`,
+  ]
+  for (const url of urls) {
+    const data = await getJson(url)
+    if (Array.isArray(data) && data.length) return data
   }
+  return []
 }
 
-// Cours d'un métal (ETF) en CAD.
-async function fetchMetal(metal, key, rate) {
-  const q = first(await getJson(`${FMP}/quote?symbol=${metal.ticker}&apikey=${key}`))
-  if (!q) return { ...metal, prix_cad: null, variation_jour_pct: null }
-  return {
-    nom: metal.nom,
-    ticker: metal.ticker,
-    prix_cad: cad(q.price, rate),
-    variation_jour_pct: q.changePercentage ?? q.changesPercentage ?? null,
-    variation_annee_pct:
-      q.yearHigh && q.price ? null : null, // YTD non fourni par ce point d'accès
-  }
+function quoteChange(q) {
+  return q.changePercentage ?? q.changesPercentage ?? null
 }
 
 // Données crypto (CoinGecko, directement en CAD, en un seul appel).
@@ -128,20 +85,46 @@ async function fetchCryptos() {
   })
 }
 
-// Rassemble toutes les données de marché.
-// La crypto (CoinGecko) tourne en parallèle ; les appels FMP sont séquencés et
-// peu nombreux à la fois, pour rester sous les limites du plan gratuit FMP.
+// Rassemble toutes les données de marché (peu d'appels FMP).
 export async function gatherMarketData(fmpKey) {
   const rate = await fetchUsdToCad()
   const cryptoPromise = fetchCryptos()
 
-  const actions = await mapPool(STOCKS, 3, (s) => fetchStock(s, fmpKey, rate))
-  const metaux = await mapPool(METALS, 3, (m) => fetchMetal(m, fmpKey, rate))
+  const allSymbols = [...STOCKS, ...METALS.map((m) => m.ticker)]
+  const quotes = await fetchQuotesBatch(allSymbols, fmpKey)
+  const bySymbol = Object.fromEntries(quotes.map((q) => [q.symbol, q]))
+
+  const actions = STOCKS.map((symbol) => {
+    const q = bySymbol[symbol]
+    if (!q) return null
+    return {
+      nom: q.name || symbol,
+      ticker: symbol,
+      prix_cad: cad(q.price, rate),
+      variation_jour_pct: quoteChange(q),
+      moyenne_50j_cad: cad(q.priceAvg50, rate),
+      moyenne_200j_cad: cad(q.priceAvg200, rate),
+      market_cap_usd: q.marketCap ?? null,
+      per: q.pe ?? null,
+      bpa_usd: q.eps ?? null,
+    }
+  }).filter(Boolean)
+
+  const metaux = METALS.map((m) => {
+    const q = bySymbol[m.ticker]
+    return {
+      nom: m.nom,
+      ticker: m.ticker,
+      prix_cad: q ? cad(q.price, rate) : null,
+      variation_jour_pct: q ? quoteChange(q) : null,
+    }
+  })
+
   const crypto = await cryptoPromise
 
   return {
     taux_usd_cad: +rate.toFixed(4),
-    actions: actions.filter(Boolean),
+    actions,
     crypto,
     metaux,
   }

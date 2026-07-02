@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { sampleMainAssets, sampleHonorableMentions } from '../data/sampleAssets.js'
 import { getLatestRecommendation, mainAssets, honorableMentions } from '../lib/recommendations.js'
 import { getWeights } from '../lib/weights.js'
-import { saveSession } from '../lib/sessions.js'
+import { addTransaction, setPrice } from '../lib/portfolio.js'
+import { fetchCryptoPrices, fetchStockPrices, isKnownCrypto } from '../lib/prices.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 import ConfidenceBadge from '../components/ConfidenceBadge.jsx'
 
@@ -11,7 +12,8 @@ export default function Calculator() {
   const [amountInput, setAmountInput] = useState('')
   const [amount, setAmount] = useState(0)
   const [showMentions, setShowMentions] = useState(false)
-  const [savedMsg, setSavedMsg] = useState(null)
+  const [registering, setRegistering] = useState(false)
+  const [registerMsg, setRegisterMsg] = useState(null)
 
   // Pondération choisie dans les Réglages.
   const weights = useMemo(() => getWeights(), [])
@@ -63,21 +65,61 @@ export default function Calculator() {
     e.preventDefault()
     const value = parseFloat(amountInput.replace(',', '.'))
     setAmount(Number.isFinite(value) && value > 0 ? value : 0)
-    setSavedMsg(null)
+    setRegisterMsg(null)
   }
 
-  async function handleSaveSession() {
-    await saveSession(amount, {
-      lignes: allocations.map((a) => ({
-        id: a.id,
-        nom: a.nom,
-        ticker: a.ticker,
-        confiance: a.confiance,
-        montant: a.montant,
-      })),
-      weights,
-    })
-    setSavedMsg('✓ Calcul enregistré')
+  // Ajoute les placements calculés au portefeuille : pour chacun, on achète
+  // au prix actuel la quantité correspondant au montant alloué.
+  async function handleRegister() {
+    const chosen = allocations.filter((a) => a.montant > 0)
+    if (chosen.length === 0) return
+    const ok = window.confirm(
+      `Ajouter ces ${chosen.length} placements à ton portefeuille ? ` +
+        `Chacun sera enregistré comme un achat au prix actuel.`,
+    )
+    if (!ok) return
+
+    setRegistering(true)
+    setRegisterMsg(null)
+    try {
+      // Prix actuels en CAD (crypto via CoinGecko, le reste via notre serveur).
+      const cryptoTickers = chosen.filter((a) => isKnownCrypto(a.ticker)).map((a) => a.ticker)
+      const autresTickers = chosen.filter((a) => !isKnownCrypto(a.ticker)).map((a) => a.ticker)
+      const [cryptoPrix, autresPrix] = await Promise.all([
+        fetchCryptoPrices(cryptoTickers),
+        fetchStockPrices(autresTickers),
+      ])
+      const prix = { ...cryptoPrix, ...autresPrix }
+
+      const today = new Date().toISOString().slice(0, 10)
+      let ajoutes = 0
+      let ignores = 0
+      for (const a of chosen) {
+        const p = prix[a.ticker]
+        if (p && p > 0) {
+          await addTransaction({
+            nom: a.nom,
+            ticker: a.ticker,
+            type: a.type,
+            quantite: +(a.montant / p).toFixed(6),
+            prixAchat: p,
+            date: today,
+          })
+          await setPrice(a.ticker, p, { nom: a.nom, type: a.type })
+          ajoutes++
+        } else {
+          ignores++
+        }
+      }
+      setRegisterMsg(
+        `✓ ${ajoutes} placement${ajoutes > 1 ? 's' : ''} ajouté${ajoutes > 1 ? 's' : ''} au portefeuille` +
+          (ignores ? ` — ${ignores} sans prix ignoré${ignores > 1 ? 's' : ''}` : ''),
+      )
+    } catch (e) {
+      setRegisterMsg(`⚠️ ${e.message}`)
+    } finally {
+      setRegistering(false)
+    }
   }
 
   return (
@@ -170,14 +212,19 @@ export default function Calculator() {
       </div>
 
       {amount > 0 && (
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 space-y-2">
           <button
-            onClick={handleSaveSession}
-            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-600"
+            onClick={handleRegister}
+            disabled={registering}
+            className="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
           >
-            Enregistrer ce calcul
+            {registering ? 'Ajout en cours…' : '➕ Ajouter ces placements à mon portefeuille'}
           </button>
-          {savedMsg && <span className="text-sm text-emerald-400">{savedMsg}</span>}
+          <p className="text-xs text-slate-500">
+            Chaque placement sélectionné sera enregistré comme un achat au prix
+            actuel, dans l'onglet Portefeuille.
+          </p>
+          {registerMsg && <p className="text-sm text-emerald-400">{registerMsg}</p>}
         </div>
       )}
     </div>

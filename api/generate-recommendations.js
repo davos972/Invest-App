@@ -51,7 +51,9 @@ export default async function handler(req, res) {
       max_tokens: 12000,
       thinking: { type: 'adaptive' },
       output_config: {
-        effort: 'medium',
+        // "low" garde une bonne analyse tout en restant bien sous la limite de
+        // 60 s de Vercel. On pourra remonter à "medium"/"high" plus tard.
+        effort: 'low',
         format: { type: 'json_schema', schema: OUTPUT_SCHEMA },
       },
       system: SYSTEM_PROMPT,

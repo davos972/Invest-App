@@ -29,14 +29,44 @@ export default function Home() {
   async function handleGenerate() {
     setGenerating(true)
     setError(null)
-    try {
-      await generateRecommendations()
-      await load()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setGenerating(false)
+    const before = reco?.generated_at || null
+
+    // Le serveur peut mettre jusqu'à ~1 min et la connexion mobile peut se
+    // couper avant la fin. On ne se fie donc PAS à la réponse directe : on lance
+    // la demande, puis on surveille l'apparition du résultat dans la base.
+    let serverError = null
+    generateRecommendations().then(
+      () => {},
+      (e) => {
+        const msg = e?.message || ''
+        // On ignore les coupures réseau (le serveur continue de travailler).
+        // On ne retient que les vraies erreurs serveur.
+        if (!/failed to fetch|networkerror|load failed|fetch/i.test(msg)) {
+          serverError = e
+        }
+      },
+    )
+
+    const debut = Date.now()
+    const limite = 3 * 60 * 1000 // on surveille jusqu'à 3 minutes
+    while (Date.now() - debut < limite) {
+      if (serverError) {
+        setError(serverError.message)
+        setGenerating(false)
+        return
+      }
+      await new Promise((r) => setTimeout(r, 5000))
+      const latest = await getLatestRecommendation()
+      if (latest && latest.generated_at !== before) {
+        setReco(latest)
+        setGenerating(false)
+        return
+      }
     }
+    setError(
+      'La génération prend plus de temps que prévu. Recharge la page dans une minute pour voir le résultat.',
+    )
+    setGenerating(false)
   }
 
   const sections = toSections(reco)
@@ -62,8 +92,9 @@ export default function Home() {
 
       {generating && (
         <p className="mb-4 rounded-lg bg-slate-900 px-3 py-2 text-sm text-slate-300">
-          ⏳ L'IA analyse les marchés… Cela peut prendre jusqu'à une minute, ne
-          ferme pas la page.
+          ⏳ L'IA analyse les marchés… Cela peut prendre jusqu'à une minute. Le
+          résultat s'affichera tout seul dès qu'il est prêt — tu peux patienter
+          ici.
         </p>
       )}
 

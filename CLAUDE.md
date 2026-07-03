@@ -26,24 +26,37 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 - **En ligne** : https://invest-app-silk.vercel.app (déploiement auto Vercel).
 - **Supabase** : projet `ojjdvzgtpddlamncsygx`. RLS activée (chaque user ne voit
   que ses données).
-- **APIs** : CoinGecko (crypto, gratuit, sans clé, en CAD), FMP (actions/métaux,
-  **offre gratuite = 250 requêtes/jour**), ExchangeRate open.er-api.com (USD→CAD),
-  Claude API (moteur IA, `claude-opus-4-8`).
+- **APIs** : CoinGecko (crypto, gratuit, sans clé, en CAD), FMP (actions +
+  or/argent, **offre gratuite = 250 requêtes/jour, un appel par symbole**),
+  ExchangeRate open.er-api.com (USD→CAD), Claude API (moteur IA, `claude-opus-4-8`).
+- FMP a resserré son offre gratuite (juillet 2026) : la requête groupée
+  multi-symboles est passée payante (402), tout comme les ETF métaux
+  (GLD/SLV/PALL/PPLT), même interrogés un par un. Seuls les **contrats à terme
+  or (GCUSD) et argent (SIUSD)** restent gratuits chez FMP. Palladium et
+  platine : aucune source gratuite trouvée (testé metals-api.com et Twelve
+  Data, tous deux payants pour ces deux métaux) → retirés de l'app pour
+  l'instant (voir README, section 5).
 
 ## Variables d'environnement (dans Vercel, PAS dans le repo)
 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (publiques, aussi dans `.env` local)
 - `FMP_API_KEY` (secrète, serveur)
 - `ANTHROPIC_API_KEY` (secrète, serveur)
+- `METALS_API_KEY` et `TWELVEDATA_API_KEY` ont été créées pendant les tests du
+  problème FMP (métaux) mais **ne sont plus utilisées par le code** — piste
+  abandonnée (payantes pour palladium/platine). Peuvent être supprimées de
+  Vercel sans risque, ou laissées de côté sans conséquence.
 
 ## Workflow Git (IMPORTANT)
 
-- Développer sur la branche **`claude/investment-app-setup-ycqpyt`**.
+- La branche de développement change à chaque nouvelle session (nom imposé au
+  démarrage, ex. `claude/investment-app-fmp-quota-7boi2p`) — utilise celle
+  indiquée en début de session, pas un nom fixe.
 - Déploiement = **fast-forward de `main`** puis push (l'utilisateur a donné le
   feu vert permanent pour déployer ainsi). Après merge, revenir sur la branche.
 - Fin des messages de commit :
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` puis
-  `Claude-Session: https://claude.ai/code/session_01AsvWbqBRio4CWEzzyVQn3G`
+  `Co-Authored-By: Claude <noreply@anthropic.com>` + une ligne
+  `Claude-Session: <lien de la session en cours>`.
 
 ## État d'avancement
 
@@ -60,22 +73,19 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   (surveille l'apparition du résultat, pas de « Failed to fetch »).
 - Le bouton du Calcul **« ➕ Ajouter ces placements à mon portefeuille »** achète
   chaque placement calculé au prix actuel et le journalise dans le portefeuille.
+- **FMP validé** ✅ : après resserrement de l'offre gratuite FMP (requête
+  groupée + ETF métaux passés payants), correctif déployé et confirmé en
+  production — génération testée, actions + crypto + métaux (Or, Argent)
+  s'affichent tous. Outils de diagnostic (`api/debug-fmp.js`,
+  `api/debug-metals.js`) retirés.
 
-## ⚠️ En cours / à vérifier en priorité
+## Prochaines étapes
 
-1. **Quota FMP** : la limite gratuite du jour a été épuisée pendant les tests
-   (429 « Limit Reach »). Correctif déployé : `api/market-data.js` fait
-   maintenant **une requête groupée** (`/stable/quote?symbol=A,B,C`, repli
-   legacy `/api/v3/quote/...`) → ~1-2 appels FMP par génération au lieu de ~70.
-   **À faire une fois le quota FMP réinitialisé** (~24h) : ouvrir
-   `…/api/debug-fmp` pour confirmer que ça renvoie du JSON (statut 200), puis
-   « Générer » et vérifier que actions + crypto + métaux s'affichent tous.
-2. **Retirer l'outil de diagnostic** `api/debug-fmp.js` une fois FMP validé.
-
-## Prochaines étapes (après validation FMP)
-
+- **Palladium / Platine** : retirés faute de source gratuite (voir section
+  APIs ci-dessus). À réévaluer si une source gratuite apparaît, ou si
+  l'utilisateur accepte un petit forfait payant un jour.
 - **Fondamentaux détaillés** (marges, ROIC, dette) : non fournis actuellement
-  (la requête groupée ne donne que cours, P/E, capitalisation, BPA, moyennes
+  (`api/market-data.js` ne donne que cours, P/E, capitalisation, BPA, moyennes
   50/200j). À enrichir avec parcimonie (1 appel/action) ou via une offre FMP
   payante — décision utilisateur.
 - **B3 — Automatisation du lundi** : cron Vercel appelant la génération (sans
@@ -87,9 +97,9 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 ## Carte des fichiers clés
 
 - Serveur : `api/generate-recommendations.js` (chef d'orchestre, `maxDuration=60`,
-  effort `low`), `api/market-data.js` (données FMP/CoinGecko/FX), `api/prompt.js`
-  (prompt + schéma JSON), `api/candidates.js` (liste ciblée), `api/debug-fmp.js`
-  (diagnostic temporaire), `api/stock-prices.js` (prix actions/métaux).
+  effort `low`), `api/market-data.js` (données FMP/CoinGecko/FX, appels
+  individuels par symbole), `api/prompt.js` (prompt + schéma JSON),
+  `api/candidates.js` (liste ciblée), `api/stock-prices.js` (prix actions/métaux).
 - Frontend : `src/lib/recommendations.js` (lecture/génération), `src/lib/
   portfolio.js`, `src/lib/prices.js`, `src/lib/supabase.js`, `src/lib/weights.js`,
   `src/lib/preferences.js`. Pages dans `src/pages/`, composants dans

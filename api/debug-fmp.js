@@ -7,10 +7,12 @@ export default async function handler(req, res) {
 
   const base = 'https://financialmodelingprep.com'
   const tests = {
-    stable_quote_AAPL: `${base}/stable/quote?symbol=AAPL&apikey=${key}`,
-    stable_quote_batch: `${base}/stable/quote?symbol=AAPL,MSFT,GLD&apikey=${key}`,
-    legacy_quote_batch: `${base}/api/v3/quote/AAPL,MSFT,GLD?apikey=${key}`,
+    stable_quote_MSFT: `${base}/stable/quote?symbol=MSFT&apikey=${key}`,
+    stable_quote_KO: `${base}/stable/quote?symbol=KO&apikey=${key}`,
     stable_quote_GLD: `${base}/stable/quote?symbol=GLD&apikey=${key}`,
+    stable_quote_SLV: `${base}/stable/quote?symbol=SLV&apikey=${key}`,
+    stable_quote_PALL: `${base}/stable/quote?symbol=PALL&apikey=${key}`,
+    stable_quote_PPLT: `${base}/stable/quote?symbol=PPLT&apikey=${key}`,
   }
 
   const out = {}

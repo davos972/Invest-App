@@ -3,17 +3,24 @@
 // - Actions / métaux : via FMP (nécessite une clé) — branché plus tard.
 
 // Correspondance entre nos tickers crypto et les identifiants CoinGecko.
+// Doit rester alignée avec la liste CRYPTOS de api/candidates.js.
 const COINGECKO_IDS = {
   BTC: 'bitcoin',
   ETH: 'ethereum',
   SOL: 'solana',
+  XRP: 'ripple',
+  BNB: 'binancecoin',
   LINK: 'chainlink',
+  SUI: 'sui',
+  ONDO: 'ondo-finance',
   RNDR: 'render-token',
+  AVAX: 'avalanche-2',
+  HYPE: 'hyperliquid',
+  // Anciens candidats gardés pour les données d'exemple (sampleAssets.js).
   INJ: 'injective-protocol',
   ADA: 'cardano',
   DOT: 'polkadot',
   MATIC: 'matic-network',
-  XRP: 'ripple',
 }
 
 // Va chercher les prix en CAD pour une liste de tickers crypto.

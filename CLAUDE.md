@@ -79,6 +79,18 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   s'affichent tous. Outils de diagnostic (`api/debug-fmp.js`,
   `api/debug-metals.js`) retirés.
 
+## ⚠️ En attente (reprise de session)
+
+- **Quota FMP du jour épuisé** (429 « Limit Reach ») après une journée de
+  tests — rien de cassé, remise à zéro automatique ~24 h. **À faire ensuite** :
+  1) l'utilisateur re-teste « ➕ Ajouter ces placements » depuis le Calculateur
+  (les correctifs SUI/AVAX + rafale FMP + doublons mentions sont déployés mais
+  pas encore re-testés à cause du quota) ; 2) ouvrir `…/api/debug-prices` une
+  fois pour confirmer « TOUT EST OK » ; 3) retirer `api/debug-prices.js`.
+- Audit complet déjà fait : les 11 cryptos ✓ sur les 2 chemins (génération +
+  portefeuille), 22 actions ✓, 2 métaux ✓, FX ✓. Économiser le quota : chaque
+  génération / audit / ajout ≈ 24 requêtes FMP (250/jour).
+
 ## Prochaines étapes
 
 - **Palladium / Platine** : retirés faute de source gratuite (voir section

@@ -40,7 +40,7 @@ Sentiment. Aucune donnée de sentiment (réseaux sociaux, Google Trends) n'est f
    - Crypto : top 3 sécuritaire (surtout Tier 1/2) + top 3 risqué (surtout Tier 2/3).
    - Métaux : classement des 2 (bloc sécuritaire unique).
 4. Attribuer un niveau de confiance (High / Medium / Low) en respectant strictement les plafonds.
-5. Sélectionner 10 mentions honorables (mélange des trois types), moins prioritaires que les 16 principales.
+5. Sélectionner 10 mentions honorables (mélange des trois types), moins prioritaires que les 14 principales. RÈGLE STRICTE : un actif déjà choisi dans actions/crypto/métaux ci-dessus (étapes 3-4) ne peut PAS réapparaître dans les mentions honorables — chaque ticker n'apparaît qu'UNE SEULE FOIS dans tout le JSON de sortie, jamais deux.
 6. Signaler un risque de concentration si la majorité des recommandations dépendent du même thème (ex. IA), dans le champ avertissement_global.
 
 Pour chaque actif retenu : un résumé de thèse (2–4 phrases, langage simple) et des points de risque explicites (1–3 phrases, langage simple).
@@ -50,7 +50,7 @@ Pour chaque actif retenu : un résumé de thèse (2–4 phrases, langage simple)
 - actions.securitaire et actions.risque : 3 entrées chacun (ou moins si les données ne permettent pas 3 choix sérieux).
 - crypto.securitaire et crypto.risque : 3 entrées chacun (même règle).
 - metaux : les 2 métaux (or, argent), classés par rang (1 = plus attractif cette semaine).
-- mentions_honorables : 10 entrées, types mélangés.
+- mentions_honorables : 10 entrées, types mélangés, tickers tous différents de ceux déjà utilisés dans actions/crypto/metaux.
 - Tous les textes en français, simples, sans jargon non expliqué.
 - evolution_semaine_pct : nombre (ex. 3.5 pour +3,5 %). Pour les actions/métaux, en l'absence de variation hebdomadaire, utilise la variation disponible et reste prudent.
 - Aucune valeur inventée. Toute donnée absente → confiance abaissée + mention dans points_risque.`

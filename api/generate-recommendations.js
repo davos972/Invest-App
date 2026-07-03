@@ -9,6 +9,22 @@ import { SYSTEM_PROMPT, buildUserMessage, OUTPUT_SCHEMA } from './prompt.js'
 // Laisse jusqu'à 60 s à l'analyse (limite du plan Vercel gratuit).
 export const maxDuration = 60
 
+// Filet de sécurité : retire des mentions honorables tout ticker déjà présent
+// dans les listes principales (au cas où Claude ne respecterait pas la consigne).
+function dedupeMentions(reco) {
+  const dejaUtilises = new Set([
+    ...(reco.actions?.securitaire || []),
+    ...(reco.actions?.risque || []),
+    ...(reco.crypto?.securitaire || []),
+    ...(reco.crypto?.risque || []),
+    ...(reco.metaux || []),
+  ].map((a) => a.ticker))
+  return {
+    ...reco,
+    mentions_honorables: (reco.mentions_honorables || []).filter((a) => !dejaUtilises.has(a.ticker)),
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée (POST attendu).' })
@@ -64,7 +80,7 @@ export default async function handler(req, res) {
     if (!textBlock) {
       return res.status(502).json({ error: "L'IA n'a pas renvoyé de contenu exploitable." })
     }
-    const recommendations = JSON.parse(textBlock.text)
+    const recommendations = dedupeMentions(JSON.parse(textBlock.text))
 
     // 5) Enregistrer dans Supabase (au nom de l'utilisateur).
     const { error: insertErr } = await supabase.from('weekly_recommendations').insert({

@@ -24,10 +24,9 @@ export const CRYPTOS = [
   { symbol: 'HYPE', id: 'hyperliquid', tier: 3 },
 ]
 
-// Métaux précieux (ETF suivis).
+// Métaux précieux (cours au comptant, contrats à terme FMP — gratuits).
+// Palladium et platine retirés : aucune source gratuite trouvée chez FMP.
 export const METALS = [
-  { nom: 'Or (Gold)', ticker: 'GLD' },
-  { nom: 'Argent (Silver)', ticker: 'SLV' },
-  { nom: 'Palladium', ticker: 'PALL' },
-  { nom: 'Platine (Platinum)', ticker: 'PPLT' },
+  { nom: 'Or (Gold)', ticker: 'GCUSD' },
+  { nom: 'Argent (Silver)', ticker: 'SIUSD' },
 ]

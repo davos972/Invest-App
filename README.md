@@ -38,7 +38,7 @@ Usage strictement personnel. L'application ne constitue pas un conseil financier
 
 | Source | Usage | Coût |
 |---|---|---|
-| Financial Modeling Prep (FMP) | Données fondamentales actions + ETFs métaux (GLD, SLV, PALL, PPLT) | Tier gratuit / payant |
+| Financial Modeling Prep (FMP) | Données fondamentales actions + cours au comptant métaux (or, argent) | Tier gratuit / payant |
 | CoinGecko | Données crypto toutes capitalisations (incl. micro-caps) | Gratuit |
 | ExchangeRate-API | Conversion USD → CAD en temps réel | Tier gratuit |
 | Reddit API | Sentiment communautaire (indicateur secondaire) | Gratuit |
@@ -61,7 +61,7 @@ Usage strictement personnel. L'application ne constitue pas un conseil financier
 
 | Table | Contenu |
 |---|---|
-| `weekly_recommendations` | Top 3 sécuritaire + top 3 risqué + mentions honorables + date de génération |
+| `weekly_recommendations` | Top 3 sécuritaire + top 3 risqué + métaux + mentions honorables + date de génération |
 | `assets` | Détail de chaque actif recommandé (nom, ticker, type, analyse, niveau de confiance) |
 | `portfolio` | Investissements réels journalisés par l'utilisateur |
 | `transactions` | Historique des achats / ventes avec date, prix, quantité |
@@ -88,9 +88,14 @@ Le prompt injecté dans Claude suit cette logique :
 |---|---|---|
 | Actions | Top 3 | Top 3 |
 | Crypto | Top 3 | Top 3 |
-| Métaux précieux | Classement des 4 (Gold, Silver, Palladium, Platine) — bloc sécuritaire | — |
+| Métaux précieux | Classement des 2 (Gold, Silver) — bloc sécuritaire | — |
 
-→ **16 recommandations principales** + **10 mentions honorables** (mélange actions / métaux / crypto).
+> Palladium et Platine retirés de la sélection : aucune source de prix gratuite
+> trouvée (FMP et les alternatives testées les réservent à leurs offres payantes).
+> À réintroduire si une source gratuite apparaît, ou si un petit forfait payant
+> est envisagé un jour.
+
+→ **14 recommandations principales** + **10 mentions honorables** (mélange actions / métaux / crypto).
 
 **Pour chaque actif recommandé, Claude produit** :
 - Nom + ticker / code.
@@ -144,7 +149,7 @@ Affichage vertical en **sections repliables** pour rester lisible sur mobile :
 3. Actions — Risqué : top 3, même format.
 4. Crypto — Sécuritaire : top 3, même format.
 5. Crypto — Risqué : top 3, même format.
-6. Métaux précieux : bloc unique, classement des 4, même format.
+6. Métaux précieux : bloc unique, classement des 2 (Or, Argent), même format.
 7. Mentions honorables : 10 actifs mélangés, même format.
 
 Chaque carte est **cliquable** → renvoie vers la page d'analyse détaillée.
@@ -220,7 +225,7 @@ Principe directeur : **construire une app utilisable le plus tôt possible**, pu
 
 - **Stockage** : Supabase (cloud, multi-appareils).
 - **Type d'app** : web responsive d'abord, mobile native envisagée plus tard.
-- **Métaux précieux** : Gold, Silver, Palladium, Platine — traités comme bloc sécuritaire unique (classement des 4), pas de distinction sécuritaire / risqué.
+- **Métaux précieux** : Gold, Silver — traités comme bloc sécuritaire unique (classement des 2), pas de distinction sécuritaire / risqué. Palladium et Platine écartés (pas de source de prix gratuite trouvée).
 - **Crypto** : toutes capitalisations, y compris micro-caps.
 - **Devise** : CAD.
 - **Logique du calculateur** : Logique B (points pondérés), pondération configurable.

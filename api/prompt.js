@@ -38,7 +38,7 @@ Sentiment. Aucune donnée de sentiment (réseaux sociaux, Google Trends) n'est f
 3. Classer par catégorie :
    - Actions : top 3 sécuritaire + top 3 risqué.
    - Crypto : top 3 sécuritaire (surtout Tier 1/2) + top 3 risqué (surtout Tier 2/3).
-   - Métaux : classement des 4 (bloc sécuritaire unique).
+   - Métaux : classement des 2 (bloc sécuritaire unique).
 4. Attribuer un niveau de confiance (High / Medium / Low) en respectant strictement les plafonds.
 5. Sélectionner 10 mentions honorables (mélange des trois types), moins prioritaires que les 16 principales.
 6. Signaler un risque de concentration si la majorité des recommandations dépendent du même thème (ex. IA), dans le champ avertissement_global.
@@ -49,7 +49,7 @@ Pour chaque actif retenu : un résumé de thèse (2–4 phrases, langage simple)
 
 - actions.securitaire et actions.risque : 3 entrées chacun (ou moins si les données ne permettent pas 3 choix sérieux).
 - crypto.securitaire et crypto.risque : 3 entrées chacun (même règle).
-- metaux : les 4 métaux, classés par rang (1 = plus attractif cette semaine).
+- metaux : les 2 métaux (or, argent), classés par rang (1 = plus attractif cette semaine).
 - mentions_honorables : 10 entrées, types mélangés.
 - Tous les textes en français, simples, sans jargon non expliqué.
 - evolution_semaine_pct : nombre (ex. 3.5 pour +3,5 %). Pour les actions/métaux, en l'absence de variation hebdomadaire, utilise la variation disponible et reste prudent.
@@ -77,7 +77,7 @@ ${JSON.stringify(data.actions, null, 1)}
 DONNÉES CRYPTO (prix et montants en CAD ; tier = niveau de solidité) :
 ${JSON.stringify(data.crypto, null, 1)}
 
-DONNÉES MÉTAUX (ETF, prix en CAD) :
+DONNÉES MÉTAUX (or et argent, cours au comptant, prix en CAD) :
 ${JSON.stringify(data.metaux, null, 1)}
 
 Rappel : réponds uniquement avec le JSON demandé, en français, en respectant les plafonds de confiance par tier.`

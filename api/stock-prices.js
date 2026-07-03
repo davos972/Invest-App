@@ -2,23 +2,18 @@
 // La clé FMP est lue depuis une variable secrète (FMP_API_KEY) et n'est
 // JAMAIS envoyée au navigateur : tout se passe ici, côté serveur.
 
-// Récupère le prix (en USD) d'un symbole. Essaie d'abord la nouvelle adresse
-// FMP « stable », puis retombe sur l'ancienne « /api/v3 » en cas de besoin.
+// Récupère le prix (en USD) d'un symbole via l'adresse FMP « stable ».
+// (L'ancienne adresse « /api/v3 » n'est plus supportée par FMP, retirée.)
 async function fetchOneUsd(symbol, key) {
-  const endpoints = [
-    `https://financialmodelingprep.com/stable/quote?symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
-    `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(symbol)}?apikey=${key}`,
-  ]
-  for (const url of endpoints) {
-    try {
-      const r = await fetch(url)
-      if (!r.ok) continue
-      const data = await r.json()
-      const quote = Array.isArray(data) ? data[0] : null
-      if (quote?.price != null) return { symbol: quote.symbol || symbol, price: quote.price }
-    } catch {
-      // on tente l'adresse suivante
-    }
+  const url = `https://financialmodelingprep.com/stable/quote?symbol=${encodeURIComponent(symbol)}&apikey=${key}`
+  try {
+    const r = await fetch(url)
+    if (!r.ok) return null
+    const data = await r.json()
+    const quote = Array.isArray(data) ? data[0] : null
+    if (quote?.price != null) return { symbol: quote.symbol || symbol, price: quote.price }
+  } catch {
+    // on renvoie null : le prix de ce symbole ne sera pas disponible
   }
   return null
 }

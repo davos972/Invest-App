@@ -109,35 +109,22 @@ export const cryptoRisque = [
   }),
 ]
 
-// Métaux précieux : bloc unique, classement des 4 (pas de séparation sûr/risqué).
+// Métaux précieux : bloc unique, classement des 2 (pas de séparation sûr/risqué).
+// Palladium et platine retirés : aucune source de prix gratuite disponible.
 export const metaux = [
   asset({
-    id: 'gld', nom: 'Or (Gold)', ticker: 'GLD', type: 'metal', categorie: 'securitaire', confiance: 'High', evolution: 0.6,
+    id: 'gold', nom: 'Or (Gold)', ticker: 'GCUSD', type: 'metal', categorie: 'securitaire', confiance: 'High', evolution: 0.6,
     these: "Valeur refuge historique, demande des banques centrales soutenue.",
     risques: "Ne génère aucun rendement ; sensible aux taux réels.",
     macro: "Incertitude géopolitique et achats des banques centrales.",
-    metriques: ['ETF GLD', 'Refuge anti-inflation'],
+    metriques: ['Cours au comptant', 'Refuge anti-inflation'],
   }),
   asset({
-    id: 'slv', nom: 'Argent (Silver)', ticker: 'SLV', type: 'metal', categorie: 'securitaire', confiance: 'Medium', evolution: 1.1,
+    id: 'silver', nom: 'Argent (Silver)', ticker: 'SIUSD', type: 'metal', categorie: 'securitaire', confiance: 'Medium', evolution: 1.1,
     these: "À la fois métal précieux et métal industriel (panneaux solaires, électronique).",
     risques: "Plus volatil que l'or ; sensible au cycle industriel.",
     macro: "Demande industrielle liée à la transition énergétique.",
-    metriques: ['ETF SLV', 'Double usage'],
-  }),
-  asset({
-    id: 'pall', nom: 'Palladium', ticker: 'PALL', type: 'metal', categorie: 'securitaire', confiance: 'Low', evolution: -2.3,
-    these: "Métal industriel clé pour les pots catalytiques des véhicules thermiques.",
-    risques: "Déclin du thermique au profit de l'électrique ; offre concentrée.",
-    macro: "Transition vers les véhicules électriques défavorable.",
-    metriques: ['ETF PALL', 'Usage automobile'],
-  }),
-  asset({
-    id: 'plat', nom: 'Platine (Platinum)', ticker: 'PPLT', type: 'metal', categorie: 'securitaire', confiance: 'Low', evolution: 0.2,
-    these: "Métal industriel et précieux, usages dans l'hydrogène et l'automobile.",
-    risques: "Demande dépendante de l'industrie ; offre minière concentrée.",
-    macro: "Espoirs liés à l'économie de l'hydrogène.",
-    metriques: ['ETF PPLT', 'Pari sur l\'hydrogène'],
+    metriques: ['Cours au comptant', 'Double usage'],
   }),
 ]
 

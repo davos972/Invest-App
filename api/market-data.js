@@ -1,6 +1,7 @@
 // Récupération des données de marché réelles pour l'analyse IA.
-// Objectif : très peu d'appels FMP (offre gratuite = 250/jour), en récupérant
-// tous les cours d'un seul coup (requête groupée).
+// FMP a fermé sa requête groupée gratuite (renvoie 402) : on interroge donc
+// chaque symbole individuellement (~22 appels FMP par génération, largement
+// sous la limite gratuite de 250/jour pour un usage hebdomadaire).
 import { STOCKS, CRYPTOS, METALS } from './candidates.js'
 
 const FMP = 'https://financialmodelingprep.com'
@@ -35,18 +36,16 @@ async function fetchUsdToCad() {
   return fx?.rates?.CAD || 1
 }
 
-// TOUS les cours (actions + métaux) en un seul appel groupé.
-async function fetchQuotesBatch(symbols, key) {
-  const list = symbols.join(',')
-  const urls = [
-    `${FMP}/stable/quote?symbol=${list}&apikey=${key}`,
-    `${FMP}/api/v3/quote/${list}?apikey=${key}`,
-  ]
-  for (const url of urls) {
-    const data = await getJson(url)
-    if (Array.isArray(data) && data.length) return data
-  }
-  return []
+// Cours d'un symbole (action ou métal), interrogé individuellement.
+async function fetchOneQuote(symbol, key) {
+  const data = await getJson(`${FMP}/stable/quote?symbol=${encodeURIComponent(symbol)}&apikey=${key}`)
+  return Array.isArray(data) && data[0] ? data[0] : null
+}
+
+// Tous les cours (actions + métaux), un appel par symbole.
+async function fetchQuotesIndividually(symbols, key) {
+  const quotes = await Promise.all(symbols.map((s) => fetchOneQuote(s, key)))
+  return quotes.filter(Boolean)
 }
 
 function quoteChange(q) {
@@ -91,7 +90,7 @@ export async function gatherMarketData(fmpKey) {
   const cryptoPromise = fetchCryptos()
 
   const allSymbols = [...STOCKS, ...METALS.map((m) => m.ticker)]
-  const quotes = await fetchQuotesBatch(allSymbols, fmpKey)
+  const quotes = await fetchQuotesIndividually(allSymbols, fmpKey)
   const bySymbol = Object.fromEntries(quotes.map((q) => [q.symbol, q]))
 
   const actions = STOCKS.map((symbol) => {

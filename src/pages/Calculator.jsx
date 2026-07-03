@@ -50,15 +50,23 @@ export default function Calculator() {
     })
   }
 
-  // Logique B : chaque actif reçoit sa part proportionnelle à ses points.
+  // Logique B : chaque actif sélectionné reçoit sa part proportionnelle à ses
+  // points. On garde TOUS les actifs affichés (même non sélectionnés, montant
+  // à 0) pour que les cases à cocher restent visibles (ex. mentions honorables).
   const allocations = useMemo(() => {
     const chosen = assets.filter((a) => selected.has(a.id))
     const totalPoints = chosen.reduce((sum, a) => sum + (weights[a.confiance] || 0), 0)
-    return chosen.map((a) => {
-      const points = weights[a.confiance] || 0
-      const part = totalPoints > 0 ? (amount * points) / totalPoints : 0
-      return { ...a, points, montant: part }
-    })
+    const montantParId = new Map(
+      chosen.map((a) => {
+        const points = weights[a.confiance] || 0
+        return [a.id, totalPoints > 0 ? (amount * points) / totalPoints : 0]
+      }),
+    )
+    return assets.map((a) => ({
+      ...a,
+      points: weights[a.confiance] || 0,
+      montant: montantParId.get(a.id) || 0,
+    }))
   }, [assets, selected, weights, amount])
 
   function handleCalculer(e) {

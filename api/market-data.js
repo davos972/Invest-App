@@ -42,9 +42,17 @@ async function fetchOneQuote(symbol, key) {
   return Array.isArray(data) && data[0] ? data[0] : null
 }
 
-// Tous les cours (actions + métaux), un appel par symbole.
+// Tous les cours (actions + métaux), un appel par symbole — par petits
+// groupes plutôt que tous d'un coup, pour ne pas déclencher le blocage
+// anti-rafale de l'offre gratuite FMP (sinon certains symboles sont perdus).
 async function fetchQuotesIndividually(symbols, key) {
-  const quotes = await Promise.all(symbols.map((s) => fetchOneQuote(s, key)))
+  const TAILLE_GROUPE = 6
+  const quotes = []
+  for (let i = 0; i < symbols.length; i += TAILLE_GROUPE) {
+    const groupe = symbols.slice(i, i + TAILLE_GROUPE)
+    quotes.push(...(await Promise.all(groupe.map((s) => fetchOneQuote(s, key)))))
+    if (i + TAILLE_GROUPE < symbols.length) await sleep(250)
+  }
   return quotes.filter(Boolean)
 }
 

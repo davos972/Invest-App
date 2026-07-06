@@ -1,29 +1,12 @@
-// Fonction serveur (Vercel) — génère les recommandations de la semaine.
-// Enchaîne : données de marché réelles -> prompt -> Claude -> sauvegarde Supabase.
-// Les clés (Claude, FMP) restent secrètes, côté serveur uniquement.
-import Anthropic from '@anthropic-ai/sdk'
+// Fonction serveur (Vercel) — génère les recommandations de la semaine
+// à la demande (bouton « Générer » de l'app, utilisateur connecté).
+// Le cœur de la génération est partagé avec le cron du lundi
+// (voir api/generation-core.js).
 import { createClient } from '@supabase/supabase-js'
-import { gatherMarketData } from './market-data.js'
-import { SYSTEM_PROMPT, buildUserMessage, OUTPUT_SCHEMA } from './prompt.js'
+import { generateWeeklyRecommendations } from './generation-core.js'
 
 // Laisse jusqu'à 60 s à l'analyse (limite du plan Vercel gratuit).
 export const maxDuration = 60
-
-// Filet de sécurité : retire des mentions honorables tout ticker déjà présent
-// dans les listes principales (au cas où Claude ne respecterait pas la consigne).
-function dedupeMentions(reco) {
-  const dejaUtilises = new Set([
-    ...(reco.actions?.securitaire || []),
-    ...(reco.actions?.risque || []),
-    ...(reco.crypto?.securitaire || []),
-    ...(reco.crypto?.risque || []),
-    ...(reco.metaux || []),
-  ].map((a) => a.ticker))
-  return {
-    ...reco,
-    mentions_honorables: (reco.mentions_honorables || []).filter((a) => !dejaUtilises.has(a.ticker)),
-  }
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -57,32 +40,10 @@ export default async function handler(req, res) {
   const userId = userData.user.id
 
   try {
-    // 3) Récupérer les données de marché réelles.
-    const marketData = await gatherMarketData(process.env.FMP_API_KEY)
+    // 3) Générer (données de marché -> Claude -> JSON nettoyé).
+    const recommendations = await generateWeeklyRecommendations(req.body?.model)
 
-    // 4) Demander l'analyse à Claude (sortie JSON garantie par le schéma).
-    const anthropic = new Anthropic()
-    const message = await anthropic.messages.create({
-      model: req.body?.model || 'claude-opus-4-8',
-      max_tokens: 12000,
-      thinking: { type: 'adaptive' },
-      output_config: {
-        // "low" garde une bonne analyse tout en restant bien sous la limite de
-        // 60 s de Vercel. On pourra remonter à "medium"/"high" plus tard.
-        effort: 'low',
-        format: { type: 'json_schema', schema: OUTPUT_SCHEMA },
-      },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildUserMessage(marketData) }],
-    })
-
-    const textBlock = message.content.find((b) => b.type === 'text')
-    if (!textBlock) {
-      return res.status(502).json({ error: "L'IA n'a pas renvoyé de contenu exploitable." })
-    }
-    const recommendations = dedupeMentions(JSON.parse(textBlock.text))
-
-    // 5) Enregistrer dans Supabase (au nom de l'utilisateur).
+    // 4) Enregistrer dans Supabase (au nom de l'utilisateur).
     const { error: insertErr } = await supabase.from('weekly_recommendations').insert({
       user_id: userId,
       data: recommendations,

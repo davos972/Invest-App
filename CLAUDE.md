@@ -49,6 +49,12 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (publiques, aussi dans `.env` local)
 - `FMP_API_KEY` (secrète, serveur)
 - `ANTHROPIC_API_KEY` (secrète, serveur)
+- `CRON_SECRET` (secrète — Vercel l'envoie automatiquement au cron du lundi ;
+  sert à refuser tout appel extérieur à `/api/cron-generate`)
+- `SUPABASE_SERVICE_ROLE_KEY` (très secrète — clé Supabase à tous les droits,
+  utilisée uniquement par le cron, jamais côté navigateur)
+- `RECO_OWNER_USER_ID` (l'identifiant Supabase de l'utilisateur : le cron
+  enregistre les recommandations à son nom)
 - `METALS_API_KEY` et `TWELVEDATA_API_KEY` ont été créées pendant les tests du
   problème FMP (métaux) mais **ne sont plus utilisées par le code** — piste
   abandonnée (payantes pour palladium/platine). Peuvent être supprimées de
@@ -108,18 +114,25 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   (`api/market-data.js` ne donne que cours, P/E, capitalisation, BPA, moyennes
   50/200j). À enrichir avec parcimonie (1 appel/action) ou via une offre FMP
   payante — décision utilisateur.
-- **B3 — Automatisation du lundi** : cron Vercel appelant la génération (sans
-  utilisateur → utiliser la clé `service_role` + un id propriétaire). Garder le
-  bouton manuel en secours.
+- **B3 — Automatisation du lundi** : code déployé ✅ (`api/cron-generate.js`,
+  cron Vercel `0 11 * * 1` = lundi ~6-7 h heure de l'Est, cœur partagé dans
+  `api/generation-core.js`, bouton manuel conservé). **Reste à faire par
+  l'utilisateur** : créer les 3 variables Vercel (`CRON_SECRET`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `RECO_OWNER_USER_ID`) puis redéployer, et
+  vérifier le lundi suivant que la génération est apparue toute seule.
+  Note plan gratuit Vercel : l'heure exacte peut glisser dans l'heure qui
+  suit ; max 2 crons par projet, fréquence quotidienne au plus.
 - **Phase 3** : sentiment Reddit / Google Trends, affinage prompts, analyse de
   performance a posteriori.
 
 ## Carte des fichiers clés
 
-- Serveur : `api/generate-recommendations.js` (chef d'orchestre, `maxDuration=60`,
-  effort `low`), `api/market-data.js` (données FMP/CoinGecko/FX, appels
-  individuels par symbole), `api/prompt.js` (prompt + schéma JSON),
-  `api/candidates.js` (liste ciblée), `api/stock-prices.js` (prix actions/métaux).
+- Serveur : `api/generation-core.js` (cœur partagé de la génération, effort
+  `low`), `api/generate-recommendations.js` (bouton manuel, `maxDuration=60`),
+  `api/cron-generate.js` (cron du lundi, secret + service_role),
+  `api/market-data.js` (données FMP/CoinGecko/FX, appels individuels par
+  symbole), `api/prompt.js` (prompt + schéma JSON), `api/candidates.js`
+  (liste ciblée), `api/stock-prices.js` (prix actions/métaux).
 - Frontend : `src/lib/recommendations.js` (lecture/génération), `src/lib/
   portfolio.js`, `src/lib/prices.js`, `src/lib/supabase.js`, `src/lib/weights.js`,
   `src/lib/preferences.js`. Pages dans `src/pages/`, composants dans

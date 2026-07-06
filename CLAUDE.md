@@ -125,13 +125,17 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   suit ; max 2 crons par projet, fréquence quotidienne au plus.
 - **Analyse de performance a posteriori** ✅ code déployé (juillet 2026) :
   table `price_history` (globale, instantané des ~35 actifs à chaque
-  génération, zéro appel FMP en plus), `api/price-history.js` branché sur les
-  2 chemins de génération, section repliable « 📊 Analyse de performance »
-  dans la page Portefeuille (verdict de timing par achat : fourchette min-max
-  observée depuis l'achat). L'analyse s'enrichit semaine après semaine avec
-  l'historique. **Reste à faire par l'utilisateur** : exécuter le SQL de la
-  table dans Supabase (SQL Editor), sinon la section affichera simplement
-  « historique trop court » et les instantanés échoueront en silence.
+  génération, zéro appel FMP en plus) qui mémorise le prix ET le contexte de
+  marché du moment (moyennes 50/200 j, haut/bas 52 sem. pour actions/métaux ;
+  variations 7 j/30 j + distance ATH pour cryptos). Section repliable
+  « 📊 Analyse de performance » dans Portefeuille : verdict de TIMING par
+  achat basé sur le contexte au moment de l'achat, à la demande de
+  l'utilisateur (⚠️ impulsion / 🎯 consolidation / 🔪 chute / 👍 zone
+  correcte — logique dans `src/lib/history.js`), + fourchette observée
+  depuis l'achat en complément. Fenêtre de rattachement achat↔instantané :
+  ±10 jours. **Reste à faire par l'utilisateur** : exécuter le SQL de la
+  table dans Supabase (SQL Editor), sinon les instantanés échoueront en
+  silence et la section affichera « contexte inconnu ».
   Pas de flux de VENTE dans l'app pour l'instant → « ai-je vendu au bon
   moment » sera possible seulement si on ajoute la vente un jour.
 - **Phase 3** : sentiment Reddit / Google Trends, affinage prompts.

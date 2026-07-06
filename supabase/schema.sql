@@ -63,15 +63,23 @@ create table if not exists calculator_sessions (
   created_at timestamptz not null default now()
 );
 
--- 6) Historique des prix (un instantané des ~35 actifs à chaque génération).
---    Table GLOBALE (les prix sont les mêmes pour tout le monde) : pas de
---    user_id. Alimente l'analyse de performance a posteriori.
+-- 6) Historique des prix + contexte de marché (un instantané des ~35 actifs
+--    à chaque génération). Table GLOBALE (les prix sont les mêmes pour tout
+--    le monde) : pas de user_id. Alimente l'analyse de performance a
+--    posteriori (timing d'achat : impulsion vs consolidation).
 create table if not exists price_history (
   id uuid primary key default gen_random_uuid(),
   ticker text not null,
   nom text,
   type text,             -- action / crypto / metal
   prix_cad numeric not null,
+  moyenne_50j_cad numeric,       -- actions/métaux : moyenne 50 jours
+  moyenne_200j_cad numeric,      -- actions/métaux : moyenne 200 jours
+  haut_52s_cad numeric,          -- actions/métaux : plus haut sur 1 an
+  bas_52s_cad numeric,           -- actions/métaux : plus bas sur 1 an
+  variation_semaine_pct numeric, -- crypto : variation 7 jours
+  variation_mois_pct numeric,    -- crypto : variation 30 jours
+  distance_ath_pct numeric,      -- crypto : écart au sommet historique
   captured_at timestamptz not null default now()
 );
 

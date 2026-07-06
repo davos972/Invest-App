@@ -111,6 +111,8 @@ export async function gatherMarketData(fmpKey) {
       variation_jour_pct: quoteChange(q),
       moyenne_50j_cad: cad(q.priceAvg50, rate),
       moyenne_200j_cad: cad(q.priceAvg200, rate),
+      haut_52s_cad: cad(q.yearHigh, rate),
+      bas_52s_cad: cad(q.yearLow, rate),
       market_cap_usd: q.marketCap ?? null,
       per: q.pe ?? null,
       bpa_usd: q.eps ?? null,
@@ -124,6 +126,10 @@ export async function gatherMarketData(fmpKey) {
       ticker: m.ticker,
       prix_cad: q ? cad(q.price, rate) : null,
       variation_jour_pct: q ? quoteChange(q) : null,
+      moyenne_50j_cad: q ? cad(q.priceAvg50, rate) : null,
+      moyenne_200j_cad: q ? cad(q.priceAvg200, rate) : null,
+      haut_52s_cad: q ? cad(q.yearHigh, rate) : null,
+      bas_52s_cad: q ? cad(q.yearLow, rate) : null,
     }
   })
 

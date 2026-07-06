@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getPriceHistory, analyseEntry } from '../lib/history.js'
+import { getPriceHistory, analyseContexteAchat, analyseEntry } from '../lib/history.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
 import CollapsibleSection from './CollapsibleSection.jsx'
 
-// Analyse de performance a posteriori : pour chaque achat, compare ton prix
-// d'entrée à la fourchette de prix observée depuis (historique hebdomadaire).
+// Analyse de performance a posteriori : pour chaque achat, juge le TIMING
+// d'après le contexte de marché du moment (impulsion ? consolidation ?),
+// mémorisé dans price_history à chaque génération de recommandations.
 export default function PerformanceAnalysis({ holdings }) {
   const [history, setHistory] = useState(null)
 
@@ -67,25 +68,32 @@ export default function PerformanceAnalysis({ holdings }) {
 
                 <div className="mt-2 space-y-2">
                   {h.transactions.map((t) => {
-                    const a = analyseEntry(t.prixAchat, t.date, points)
+                    const ctx = analyseContexteAchat(t.prixAchat, t.date, h.type, points)
+                    const fourchette = analyseEntry(t.prixAchat, t.date, points)
                     return (
                       <div key={t.id} className="rounded-md bg-slate-950/60 px-3 py-2 text-xs">
                         <div className="text-slate-400">
                           Achat du {t.date} à {formatCAD(t.prixAchat)}
                         </div>
-                        {a ? (
+                        {ctx ? (
                           <div className="mt-1">
-                            <span className="text-slate-200">
-                              {a.verdict.emoji} {a.verdict.texte}
-                            </span>
-                            <div className="mt-0.5 text-slate-500">
-                              Fourchette observée depuis : {formatCAD(a.min)} – {formatCAD(a.max)} ({a.nbPoints} relevés)
+                            <div className="font-medium text-slate-200">
+                              {ctx.emoji} {ctx.titre}
                             </div>
+                            <p className="mt-0.5 text-slate-400">{ctx.texte}</p>
+                            <div className="mt-0.5 text-slate-600">{ctx.details}</div>
                           </div>
                         ) : (
                           <div className="mt-1 text-slate-500">
-                            ⏳ Historique encore trop court pour juger le timing (les prix
-                            sont relevés à chaque génération, le lundi).
+                            ⏳ Contexte de marché inconnu pour cette date : l'app enregistre
+                            le contexte à chaque génération (lundi). Les achats faits à
+                            partir de maintenant seront analysés automatiquement.
+                          </div>
+                        )}
+                        {fourchette && (
+                          <div className="mt-1 border-t border-slate-800 pt-1 text-slate-600">
+                            Depuis cet achat, prix observé entre {formatCAD(fourchette.min)} et{' '}
+                            {formatCAD(fourchette.max)} ({fourchette.nbPoints} relevés).
                           </div>
                         )}
                       </div>
@@ -98,8 +106,8 @@ export default function PerformanceAnalysis({ holdings }) {
         )}
 
         <p className="px-1 pt-1 text-xs text-slate-600">
-          L'app mémorise les prix à chaque génération de recommandations :
-          l'analyse devient plus précise semaine après semaine.
+          Le verdict se base sur le contexte au moment de l'achat (impulsion,
+          consolidation, chute), mémorisé à chaque génération de recommandations.
         </p>
       </CollapsibleSection>
     </div>

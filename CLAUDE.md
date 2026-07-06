@@ -114,12 +114,13 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   (`api/market-data.js` ne donne que cours, P/E, capitalisation, BPA, moyennes
   50/200j). À enrichir avec parcimonie (1 appel/action) ou via une offre FMP
   payante — décision utilisateur.
-- **B3 — Automatisation du lundi** : code déployé ✅ (`api/cron-generate.js`,
-  cron Vercel `0 11 * * 1` = lundi ~6-7 h heure de l'Est, cœur partagé dans
-  `api/generation-core.js`, bouton manuel conservé). **Reste à faire par
-  l'utilisateur** : créer les 3 variables Vercel (`CRON_SECRET`,
-  `SUPABASE_SERVICE_ROLE_KEY`, `RECO_OWNER_USER_ID`) puis redéployer, et
-  vérifier le lundi suivant que la génération est apparue toute seule.
+- **B3 — Automatisation du lundi** ✅ TERMINÉ et testé (juillet 2026) :
+  `api/cron-generate.js` + cron Vercel `0 11 * * 1` (lundi ~6-7 h heure de
+  l'Est), cœur partagé dans `api/generation-core.js`, bouton manuel conservé.
+  Les 3 variables Vercel (`CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `RECO_OWNER_USER_ID`) sont créées. Testé en réel : appel sans secret
+  refusé (401) ✓, déclenchement manuel depuis Vercel → nouvelles
+  recommandations enregistrées et visibles dans l'app ✓.
   Note plan gratuit Vercel : l'heure exacte peut glisser dans l'heure qui
   suit ; max 2 crons par projet, fréquence quotidienne au plus.
 - **Phase 3** : sentiment Reddit / Google Trends, affinage prompts, analyse de

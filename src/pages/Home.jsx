@@ -5,6 +5,7 @@ import {
   generateRecommendations,
   toSections,
 } from '../lib/recommendations.js'
+import { getPriceHistory, analyseContexteActuel } from '../lib/history.js'
 import CollapsibleSection from '../components/CollapsibleSection.jsx'
 import AssetCard from '../components/AssetCard.jsx'
 
@@ -15,6 +16,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
+  // Contexte de marché du moment par ticker (impulsion / consolidation / …).
+  const [contextes, setContextes] = useState({})
 
   async function load() {
     setLoading(true)
@@ -25,6 +28,22 @@ export default function Home() {
   useEffect(() => {
     load()
   }, [])
+
+  // Dès que les recommandations sont là, calcule le contexte actuel de chaque
+  // actif à partir du dernier relevé de prix (table price_history).
+  useEffect(() => {
+    if (!reco) return
+    const items = toSections(reco).flatMap((s) => s.items)
+    const tickers = [...new Set(items.map((a) => a.ticker).filter(Boolean))]
+    getPriceHistory(tickers).then((history) => {
+      const map = {}
+      for (const a of items) {
+        const verdict = analyseContexteActuel(a.type, history[a.ticker])
+        if (verdict) map[a.ticker] = verdict
+      }
+      setContextes(map)
+    })
+  }, [reco])
 
   async function handleGenerate() {
     setGenerating(true)
@@ -137,6 +156,7 @@ export default function Home() {
                   key={asset.id}
                   asset={asset}
                   rang={section.key === 'metaux' ? asset.rang || i + 1 : null}
+                  contexte={contextes[asset.ticker]}
                 />
               ))
             )}

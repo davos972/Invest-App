@@ -139,6 +139,13 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   toujours (pas de données historiques gratuites) — c'est normal.
   Pas de flux de VENTE dans l'app pour l'instant → « ai-je vendu au bon
   moment » sera possible seulement si on ajoute la vente un jour.
+- **Timing sur les recommandations** ✅ (même session) : le verdict de
+  contexte (impulsion / consolidation / chute / …) s'affiche aussi sur la
+  page 1 — badge compact sur chaque carte (`AssetCard`, prop `contexte`)
+  + encadré « Timing » complet dans l'Analyse détaillée. Basé sur le
+  DERNIER relevé price_history (`analyseContexteActuel` dans
+  `src/lib/history.js`, textes au présent ; les verdicts d'achat passé
+  utilisent les mêmes seuils, textes au passé).
 - **Phase 3** : sentiment Reddit / Google Trends, affinage prompts.
 
 ## Carte des fichiers clés

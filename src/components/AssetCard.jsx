@@ -10,7 +10,9 @@ function evoColor(value) {
 }
 
 // Carte cliquable d'un actif recommandé. Renvoie vers l'analyse détaillée.
-export default function AssetCard({ asset, rang }) {
+// `contexte` (optionnel) : verdict de timing du moment (impulsion,
+// consolidation, …) calculé depuis le dernier relevé de prix.
+export default function AssetCard({ asset, rang, contexte }) {
   return (
     <Link
       to={`/analyse/${asset.id}`}
@@ -26,8 +28,13 @@ export default function AssetCard({ asset, rang }) {
           <span className="font-medium">{asset.nom}</span>
           <span className="text-xs text-slate-500">{asset.ticker}</span>
         </div>
-        <div className="mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <ConfidenceBadge level={asset.confiance} />
+          {contexte && (
+            <span className="text-xs text-slate-400">
+              {contexte.emoji} {contexte.titre}
+            </span>
+          )}
         </div>
       </div>
       <div className={`flex-none text-sm font-semibold ${evoColor(asset.evolution)}`}>

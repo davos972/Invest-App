@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getLatestRecommendation, findAsset } from '../lib/recommendations.js'
+import { getPriceHistory, analyseContexteActuel } from '../lib/history.js'
 import ConfidenceBadge from '../components/ConfidenceBadge.jsx'
 import { formatPercent } from '../lib/format.js'
 
@@ -12,10 +13,19 @@ export default function AssetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [asset, setAsset] = useState(undefined) // undefined = en cours, null = introuvable
+  const [contexte, setContexte] = useState(null)
 
   useEffect(() => {
     getLatestRecommendation().then((reco) => setAsset(findAsset(reco, id)))
   }, [id])
+
+  // Contexte de marché du moment (impulsion / consolidation / …).
+  useEffect(() => {
+    if (!asset?.ticker) return
+    getPriceHistory([asset.ticker]).then((history) => {
+      setContexte(analyseContexteActuel(asset.type, history[asset.ticker]))
+    })
+  }, [asset?.ticker])
 
   const back = (
     <button onClick={() => navigate(-1)} className="mb-4 text-sm text-emerald-400 hover:underline">
@@ -73,6 +83,18 @@ export default function AssetDetail() {
           </span>
         </div>
       </header>
+
+      {contexte && (
+        <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+          <h2 className="mb-1 text-sm font-semibold text-slate-200">
+            {contexte.emoji} Timing : {contexte.titre}
+          </h2>
+          <p className="text-sm leading-relaxed text-slate-300">{contexte.texte}</p>
+          <p className="mt-1.5 text-xs text-slate-500">
+            {contexte.details} · relevé du {contexte.date}
+          </p>
+        </div>
+      )}
 
       <Section titre="Thèse d'investissement">{asset.these}</Section>
 

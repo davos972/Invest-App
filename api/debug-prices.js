@@ -15,12 +15,11 @@ export default async function handler(req, res) {
   // 0) Teste des candidates de REMPLACEMENT pour les 7 actions passées
   //    premium chez FMP (200 = gratuite ✓, 402 = premium ✗).
   const REMPLACANTES = [
-    'SO', 'DUK', 'XEL',          // services publics (remplace NEE)
-    'CL', 'KMB', 'MDLZ',         // conso de base (remplace PG)
-    'SBUX', 'HD', 'NKE',         // conso (remplace MCD)
-    'MRK', 'ABBV', 'PFE',        // pharma (remplace LLY)
-    'AXP',                       // paiements (remplace MA)
-    'QCOM', 'TXN', 'AMAT',       // semi-conducteurs (remplace AVGO/ASML)
+    'JPM', 'BAC', 'GS',          // banques
+    'XOM', 'CVX',                // énergie
+    'DIS', 'ORCL', 'CRM', 'IBM', // tech / divertissement grand public
+    'INTC', 'CSCO', 'TSLA',      // tech très populaires
+    'VZ', 'T', 'CAT',            // télécoms / industrie
   ]
   const testRemplacantes = {}
   for (const s of REMPLACANTES) {

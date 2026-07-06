@@ -146,9 +146,8 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   P&L avec « dont réalisés », et verdicts de timing pour les VENTES dans
   l'analyse de performance (lecture inversée : vendre en impulsion = 🎯,
   vendre en chute = ⚠️ panique — `VERDICTS_VENTE` dans `src/lib/history.js`).
-  **Reste à faire par l'utilisateur** : SQL
-  `alter table transactions add column if not exists sens text not null default 'achat';`
-  dans Supabase, sinon les ventes échoueront à l'insertion.
+  **Validé en réel par l'utilisateur** (juillet 2026) : SQL de la colonne
+  `sens` exécuté dans Supabase, vente testée, tout fonctionne.
 - **Timing sur les recommandations** ✅ (même session) : le verdict de
   contexte (impulsion / consolidation / chute / …) s'affiche aussi sur la
   page 1 — badge compact sur chaque carte (`AssetCard`, prop `contexte`)

@@ -42,6 +42,8 @@ create table if not exists portfolio (
 );
 
 -- 4) Transactions : chaque achat / vente journalisé
+--    sens = 'achat' ou 'vente' ; prix_achat = prix unitaire de l'opération
+--    (le nom de colonne est historique, il sert aussi pour les ventes).
 create table if not exists transactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -50,6 +52,7 @@ create table if not exists transactions (
   type text,
   quantite numeric not null,
   prix_achat numeric not null,
+  sens text not null default 'achat',
   date date not null default current_date,
   created_at timestamptz not null default now()
 );

@@ -137,8 +137,18 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   Supabase, génération OK, verdicts affichés. Les achats antérieurs de plus
   de 10 jours au premier instantané restent « contexte inconnu » pour
   toujours (pas de données historiques gratuites) — c'est normal.
-  Pas de flux de VENTE dans l'app pour l'instant → « ai-je vendu au bon
-  moment » sera possible seulement si on ajoute la vente un jour.
+- **Flux de vente** ✅ code déployé (juillet 2026) : bouton « 💸 Vendre » sur
+  chaque position (quantité/prix/date, prix pré-rempli), méthode du COÛT
+  MOYEN (gain réalisé = q × (prix vente − coût moyen)), colonne `sens`
+  ('achat'/'vente') dans `transactions` (prix_achat = prix unitaire de
+  l'opération, nom historique), badges ACHAT/VENTE dans l'historique,
+  section « Positions fermées » (quantité 0, gain réalisé conservé), tuile
+  P&L avec « dont réalisés », et verdicts de timing pour les VENTES dans
+  l'analyse de performance (lecture inversée : vendre en impulsion = 🎯,
+  vendre en chute = ⚠️ panique — `VERDICTS_VENTE` dans `src/lib/history.js`).
+  **Reste à faire par l'utilisateur** : SQL
+  `alter table transactions add column if not exists sens text not null default 'achat';`
+  dans Supabase, sinon les ventes échoueront à l'insertion.
 - **Timing sur les recommandations** ✅ (même session) : le verdict de
   contexte (impulsion / consolidation / chute / …) s'affiche aussi sur la
   page 1 — badge compact sur chaque carte (`AssetCard`, prop `contexte`)

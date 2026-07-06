@@ -68,12 +68,13 @@ export default function PerformanceAnalysis({ holdings }) {
 
                 <div className="mt-2 space-y-2">
                   {h.transactions.map((t) => {
-                    const ctx = analyseContexteAchat(t.prixAchat, t.date, h.type, points)
+                    const vente = t.sens === 'vente'
+                    const ctx = analyseContexteAchat(t.prixAchat, t.date, h.type, points, t.sens)
                     const fourchette = analyseEntry(t.prixAchat, t.date, points)
                     return (
                       <div key={t.id} className="rounded-md bg-slate-950/60 px-3 py-2 text-xs">
                         <div className="text-slate-400">
-                          Achat du {t.date} à {formatCAD(t.prixAchat)}
+                          {vente ? 'Vente' : 'Achat'} du {t.date} à {formatCAD(t.prixAchat)}
                         </div>
                         {ctx ? (
                           <div className="mt-1">
@@ -92,8 +93,9 @@ export default function PerformanceAnalysis({ holdings }) {
                         )}
                         {fourchette && (
                           <div className="mt-1 border-t border-slate-800 pt-1 text-slate-600">
-                            Depuis cet achat, prix observé entre {formatCAD(fourchette.min)} et{' '}
-                            {formatCAD(fourchette.max)} ({fourchette.nbPoints} relevés).
+                            Depuis {vente ? 'cette vente' : 'cet achat'}, prix observé entre{' '}
+                            {formatCAD(fourchette.min)} et {formatCAD(fourchette.max)} (
+                            {fourchette.nbPoints} relevés).
                           </div>
                         )}
                       </div>

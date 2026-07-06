@@ -189,6 +189,54 @@ const VERDICTS_ACTUEL = {
   },
 }
 
+// Textes par code — version « vente passée » : la lecture s'inverse
+// (vendre dans la force d'une impulsion = bien ; vendre en pleine chute =
+// souvent une vente de panique).
+const VERDICTS_VENTE = {
+  impulsion: {
+    emoji: '🎯',
+    titre: 'Vendu en pleine impulsion',
+    texte:
+      "Bien joué : vendre au moment où le prix s'emballe, c'est vendre dans la force — quand les acheteurs se bousculent. C'est souvent le meilleur moment pour encaisser.",
+  },
+  chute: {
+    emoji: '⚠️',
+    titre: 'Vendu en pleine chute',
+    texte:
+      "Vendre pendant une forte baisse ressemble souvent à une vente de panique — en général le pire moment, sauf si la raison d'investir avait vraiment disparu.",
+  },
+  consolidation: {
+    emoji: '😐',
+    titre: 'Vendu en consolidation',
+    texte:
+      "Le prix marquait une pause dans une tendance favorable : vendre ici, c'est parfois sortir juste avant que la hausse reprenne. Signal mitigé.",
+  },
+  sommet_annuel: {
+    emoji: '👍',
+    titre: 'Vendu près du sommet annuel',
+    texte:
+      "Le prix touchait son plus haut niveau de l'année : bon niveau de sortie, tu as vendu quand le marché était acheteur.",
+  },
+  correct: {
+    emoji: '👍',
+    titre: 'Sortie dans une zone correcte',
+    texte:
+      "Vente dans une tendance calme, sans panique ni précipitation. Rien à redire sur le timing.",
+  },
+  calme: {
+    emoji: '😐',
+    titre: 'Vendu dans le calme',
+    texte:
+      "Le prix était stable au moment de la vente — ni euphorie à saisir, ni panique à éviter. Timing neutre.",
+  },
+  mitige: {
+    emoji: '😐',
+    titre: 'Contexte mitigé',
+    texte:
+      "Le prix bougeait modérément au moment de la vente, sans signal net. Timing neutre.",
+  },
+}
+
 // Instantané le plus proche de la date d'achat (fenêtre de ±10 jours).
 function nearestSnapshot(dateAchat, points) {
   const cible = new Date(`${dateAchat}T12:00:00Z`).getTime()
@@ -200,14 +248,16 @@ function nearestSnapshot(dateAchat, points) {
   return best
 }
 
-// Verdict de timing pour un ACHAT PASSÉ (contexte au moment de l'achat).
+// Verdict de timing pour une TRANSACTION PASSÉE (achat ou vente), selon le
+// contexte de marché au moment de l'opération.
 // Renvoie { emoji, titre, texte, details } ou null si pas d'instantané proche.
-export function analyseContexteAchat(prixAchat, dateAchat, type, points) {
+export function analyseContexteAchat(prixAchat, dateAchat, type, points, sens = 'achat') {
   const s = nearestSnapshot(dateAchat, points)
   if (!s) return null
-  const r = evaluerContexte(prixAchat, type, s, "Prix d'achat")
+  const r = evaluerContexte(prixAchat, type, s, sens === 'vente' ? 'Prix de vente' : "Prix d'achat")
   if (!r) return null
-  return { ...VERDICTS_ACHAT[r.code], details: r.details }
+  const verdicts = sens === 'vente' ? VERDICTS_VENTE : VERDICTS_ACHAT
+  return { ...verdicts[r.code], details: r.details }
 }
 
 // Verdict pour le MOMENT PRÉSENT d'un actif (dernier relevé disponible).

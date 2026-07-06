@@ -38,6 +38,7 @@ export async function getTransactions() {
     return []
   }
   // On ramène les données au format utilisé par l'application.
+  // prixAchat = prix unitaire de l'opération (achat OU vente).
   return data.map((t) => ({
     id: t.id,
     nom: t.nom,
@@ -45,14 +46,16 @@ export async function getTransactions() {
     type: t.type,
     quantite: Number(t.quantite),
     prixAchat: Number(t.prix_achat),
+    sens: t.sens || 'achat',
     date: t.date,
   }))
 }
 
 export async function addTransaction(tx) {
+  const sens = tx.sens === 'vente' ? 'vente' : 'achat'
   if (!isSupabaseConfigured) {
     const list = readLocal(TX_KEY)
-    const entry = { ...tx, id: crypto.randomUUID() }
+    const entry = { ...tx, sens, id: crypto.randomUUID() }
     localStorage.setItem(TX_KEY, JSON.stringify([...list, entry]))
     return entry
   }
@@ -65,6 +68,7 @@ export async function addTransaction(tx) {
     type: tx.type,
     quantite: tx.quantite,
     prix_achat: tx.prixAchat,
+    sens,
     date: tx.date,
   })
   if (error) console.error('Ajout de transaction échoué :', error.message)
@@ -115,10 +119,15 @@ export async function setPrice(ticker, price, extra = {}) {
   if (error) console.error('Enregistrement du prix échoué :', error.message)
 }
 
-// --- Calcul des positions détenues (fonctions pures, inchangées) ---
+// --- Calcul des positions détenues (fonctions pures) ---
 
-// Regroupe les transactions par placement et calcule, pour chacun :
-// quantité totale, prix moyen d'achat, coût total, valeur actuelle, gain/perte.
+// Regroupe les transactions par placement et rejoue achats et ventes dans
+// l'ordre chronologique, avec la méthode du COÛT MOYEN :
+//  - achat : la quantité et le coût total augmentent ;
+//  - vente : gain réalisé = quantité vendue × (prix de vente − coût moyen),
+//            puis la quantité et le coût total diminuent d'autant.
+// Une position dont la quantité retombe à 0 est « fermée » (elle garde son
+// historique et son gain réalisé).
 export function buildHoldings(transactions, prices) {
   const groups = {}
   for (const t of transactions) {
@@ -129,24 +138,59 @@ export function buildHoldings(transactions, prices) {
         nom: t.nom,
         ticker: t.ticker,
         type: t.type,
-        quantite: 0,
-        coutTotal: 0,
         transactions: [],
       }
     }
-    const g = groups[key]
-    g.quantite += Number(t.quantite)
-    g.coutTotal += Number(t.quantite) * Number(t.prixAchat)
-    g.transactions.push(t)
+    groups[key].transactions.push(t)
   }
 
   return Object.values(groups).map((g) => {
-    const prixMoyen = g.quantite > 0 ? g.coutTotal / g.quantite : 0
+    const ordre = [...g.transactions].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    let quantite = 0
+    let coutTotal = 0
+    let gainRealise = 0
+    for (const t of ordre) {
+      const q = Number(t.quantite)
+      const prix = Number(t.prixAchat)
+      if (t.sens === 'vente') {
+        // Garde-fou : on ne peut pas vendre plus que ce qu'on détient.
+        const vendu = Math.min(q, quantite)
+        const coutMoyen = quantite > 0 ? coutTotal / quantite : 0
+        gainRealise += vendu * (prix - coutMoyen)
+        coutTotal -= vendu * coutMoyen
+        quantite -= vendu
+      } else {
+        quantite += q
+        coutTotal += q * prix
+      }
+    }
+    // Évite les résidus du calcul à virgule (ex. 0.0000000001 restant).
+    if (quantite < 1e-9) {
+      quantite = 0
+      coutTotal = 0
+    }
+
+    const prixMoyen = quantite > 0 ? coutTotal / quantite : 0
     const prixActuel = prices[g.ticker] != null ? Number(prices[g.ticker]) : prixMoyen
-    const valeurActuelle = g.quantite * prixActuel
-    const pnl = valeurActuelle - g.coutTotal
-    const pnlPct = g.coutTotal > 0 ? (pnl / g.coutTotal) * 100 : 0
-    return { ...g, prixMoyen, prixActuel, valeurActuelle, pnl, pnlPct }
+    const valeurActuelle = quantite * prixActuel
+    const pnlLatent = valeurActuelle - coutTotal
+    const pnl = pnlLatent + gainRealise
+    const pnlPct = coutTotal > 0 ? (pnlLatent / coutTotal) * 100 : 0
+    const fermee = quantite === 0
+
+    return {
+      ...g,
+      quantite,
+      coutTotal,
+      gainRealise,
+      prixMoyen,
+      prixActuel,
+      valeurActuelle,
+      pnlLatent,
+      pnl,
+      pnlPct,
+      fermee,
+    }
   })
 }
 
@@ -154,7 +198,9 @@ export function buildHoldings(transactions, prices) {
 export function buildSummary(holdings) {
   const coutTotal = holdings.reduce((s, h) => s + h.coutTotal, 0)
   const valeurActuelle = holdings.reduce((s, h) => s + h.valeurActuelle, 0)
-  const pnl = valeurActuelle - coutTotal
-  const pnlPct = coutTotal > 0 ? (pnl / coutTotal) * 100 : 0
-  return { coutTotal, valeurActuelle, pnl, pnlPct }
+  const gainRealise = holdings.reduce((s, h) => s + h.gainRealise, 0)
+  const pnlLatent = valeurActuelle - coutTotal
+  const pnl = pnlLatent + gainRealise
+  const pnlPct = coutTotal > 0 ? (pnlLatent / coutTotal) * 100 : 0
+  return { coutTotal, valeurActuelle, gainRealise, pnlLatent, pnl, pnlPct }
 }

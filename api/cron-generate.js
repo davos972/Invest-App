@@ -7,6 +7,7 @@
 //    au nom du propriétaire de l'app (RECO_OWNER_USER_ID).
 import { createClient } from '@supabase/supabase-js'
 import { generateWeeklyRecommendations } from './generation-core.js'
+import { savePriceSnapshot } from './price-history.js'
 
 // Laisse jusqu'à 60 s à l'analyse (limite du plan Vercel gratuit).
 export const maxDuration = 60
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
 
   try {
     // 3) Générer (données de marché -> Claude -> JSON nettoyé).
-    const recommendations = await generateWeeklyRecommendations()
+    const { recommendations, marketData } = await generateWeeklyRecommendations()
 
     // 4) Enregistrer dans Supabase au nom du propriétaire.
     const supabase = createClient(
@@ -48,6 +49,9 @@ export default async function handler(req, res) {
     if (insertErr) {
       return res.status(500).json({ error: `Sauvegarde échouée : ${insertErr.message}` })
     }
+
+    // 5) Mémoriser les prix du jour (pour l'analyse de performance). Non bloquant.
+    await savePriceSnapshot(supabase, marketData)
 
     return res.status(200).json({ ok: true, date: recommendations.date_generation })
   } catch (err) {

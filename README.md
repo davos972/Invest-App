@@ -134,7 +134,7 @@ Accessible en cliquant sur n'importe quel actif d'un top 3. Affiche l'analyse co
 1. Enregistrer depuis l'onglet calcul.
 2. Ajout manuel : sélection parmi les actifs de la semaine, ou ajout d'un nouvel actif via son nom / code + saisie de la somme investie.
 
-**Analyse de performance** *(Phase 2)* : évaluation a posteriori — ai-je investi / vendu au bon moment, pistes d'amélioration. Nécessite l'historisation des prix.
+**Analyse de performance** : évaluation a posteriori — ai-je investi au bon moment ? L'app mémorise les prix des ~35 actifs à chaque génération (table `price_history`) et compare chaque prix d'achat à la fourchette observée depuis (verdict de timing par transaction, section repliable de la page Portefeuille). « Ai-je vendu au bon moment » viendra si un flux de vente est ajouté un jour.
 
 ---
 

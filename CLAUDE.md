@@ -123,8 +123,18 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   recommandations enregistrées et visibles dans l'app ✓.
   Note plan gratuit Vercel : l'heure exacte peut glisser dans l'heure qui
   suit ; max 2 crons par projet, fréquence quotidienne au plus.
-- **Phase 3** : sentiment Reddit / Google Trends, affinage prompts, analyse de
-  performance a posteriori.
+- **Analyse de performance a posteriori** ✅ code déployé (juillet 2026) :
+  table `price_history` (globale, instantané des ~35 actifs à chaque
+  génération, zéro appel FMP en plus), `api/price-history.js` branché sur les
+  2 chemins de génération, section repliable « 📊 Analyse de performance »
+  dans la page Portefeuille (verdict de timing par achat : fourchette min-max
+  observée depuis l'achat). L'analyse s'enrichit semaine après semaine avec
+  l'historique. **Reste à faire par l'utilisateur** : exécuter le SQL de la
+  table dans Supabase (SQL Editor), sinon la section affichera simplement
+  « historique trop court » et les instantanés échoueront en silence.
+  Pas de flux de VENTE dans l'app pour l'instant → « ai-je vendu au bon
+  moment » sera possible seulement si on ajoute la vente un jour.
+- **Phase 3** : sentiment Reddit / Google Trends, affinage prompts.
 
 ## Carte des fichiers clés
 
@@ -138,8 +148,12 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   portfolio.js`, `src/lib/prices.js`, `src/lib/supabase.js`, `src/lib/weights.js`,
   `src/lib/preferences.js`. Pages dans `src/pages/`, composants dans
   `src/components/`.
-- BDD : `supabase/schema.sql` (5 tables + RLS). Migration ajoutée à la main :
+- BDD : `supabase/schema.sql` (6 tables + RLS, dont `price_history` globale
+  pour l'historique des prix). Migration ajoutée à la main :
   `weekly_recommendations` a les colonnes `data jsonb` et `avertissement_global`.
+- Analyse de performance : `api/price-history.js` (instantané serveur),
+  `src/lib/history.js` (lecture + verdict de timing),
+  `src/components/PerformanceAnalysis.jsx` (section dans Portefeuille).
 
 ## Notes techniques
 

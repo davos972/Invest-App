@@ -63,6 +63,31 @@ create table if not exists calculator_sessions (
   created_at timestamptz not null default now()
 );
 
+-- 6) Historique des prix (un instantané des ~35 actifs à chaque génération).
+--    Table GLOBALE (les prix sont les mêmes pour tout le monde) : pas de
+--    user_id. Alimente l'analyse de performance a posteriori.
+create table if not exists price_history (
+  id uuid primary key default gen_random_uuid(),
+  ticker text not null,
+  nom text,
+  type text,             -- action / crypto / metal
+  prix_cad numeric not null,
+  captured_at timestamptz not null default now()
+);
+
+create index if not exists price_history_ticker_time
+  on price_history (ticker, captured_at);
+
+alter table price_history enable row level security;
+
+drop policy if exists "lecture_price_history" on price_history;
+create policy "lecture_price_history" on price_history
+  for select to authenticated using (true);
+
+drop policy if exists "insertion_price_history" on price_history;
+create policy "insertion_price_history" on price_history
+  for insert to authenticated with check (true);
+
 -- ============================================================
 --  Sécurité : chaque utilisateur n'accède qu'à SES propres lignes.
 -- ============================================================

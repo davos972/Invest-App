@@ -4,6 +4,7 @@
 // (voir api/generation-core.js).
 import { createClient } from '@supabase/supabase-js'
 import { generateWeeklyRecommendations } from './generation-core.js'
+import { savePriceSnapshot } from './price-history.js'
 
 // Laisse jusqu'à 60 s à l'analyse (limite du plan Vercel gratuit).
 export const maxDuration = 60
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
 
   try {
     // 3) Générer (données de marché -> Claude -> JSON nettoyé).
-    const recommendations = await generateWeeklyRecommendations(req.body?.model)
+    const { recommendations, marketData } = await generateWeeklyRecommendations(req.body?.model)
 
     // 4) Enregistrer dans Supabase (au nom de l'utilisateur).
     const { error: insertErr } = await supabase.from('weekly_recommendations').insert({
@@ -53,6 +54,9 @@ export default async function handler(req, res) {
     if (insertErr) {
       return res.status(500).json({ error: `Sauvegarde échouée : ${insertErr.message}` })
     }
+
+    // 5) Mémoriser les prix du jour (pour l'analyse de performance). Non bloquant.
+    await savePriceSnapshot(supabase, marketData)
 
     return res.status(200).json({ ok: true, data: recommendations })
   } catch (err) {

@@ -12,6 +12,7 @@ import { sampleMainAssets } from '../data/sampleAssets.js'
 import { getLatestRecommendation, mainAssets } from '../lib/recommendations.js'
 import { fetchCryptoPrices, fetchStockPrices, isKnownCrypto } from '../lib/prices.js'
 import { formatCAD, formatPercent } from '../lib/format.js'
+import PerformanceAnalysis from '../components/PerformanceAnalysis.jsx'
 
 // Couleur verte si gain, rouge si perte.
 function pnlColor(value) {
@@ -306,6 +307,9 @@ export default function Portfolio() {
           })}
         </div>
       )}
+
+      {/* Analyse de performance a posteriori (timing des achats) */}
+      {!loading && <PerformanceAnalysis holdings={holdings} />}
     </div>
   )
 }

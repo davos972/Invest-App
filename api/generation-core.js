@@ -22,7 +22,9 @@ function dedupeMentions(reco) {
   }
 }
 
-// Génère les recommandations de la semaine (renvoie l'objet JSON prêt à stocker).
+// Génère les recommandations de la semaine.
+// Renvoie { recommendations, marketData } : les recommandations prêtes à
+// stocker, et les données de marché (réutilisées pour l'historique des prix).
 export async function generateWeeklyRecommendations(model) {
   const marketData = await gatherMarketData(process.env.FMP_API_KEY)
 
@@ -45,5 +47,5 @@ export async function generateWeeklyRecommendations(model) {
   if (!textBlock) {
     throw new Error("L'IA n'a pas renvoyé de contenu exploitable.")
   }
-  return dedupeMentions(JSON.parse(textBlock.text))
+  return { recommendations: dedupeMentions(JSON.parse(textBlock.text)), marketData }
 }

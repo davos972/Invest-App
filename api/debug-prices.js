@@ -12,15 +12,23 @@ export default async function handler(req, res) {
   const key = process.env.FMP_API_KEY
   if (!key) return res.status(500).json({ error: 'FMP_API_KEY manquante côté serveur.' })
 
-  // 0) Appels FMP bruts, avec statut HTTP visible, sur les symboles qui
-  //    échouent systématiquement (pour voir la vraie raison du refus).
-  const testBrutFmp = {}
-  for (const s of ['NEE', 'PG', 'MA', 'LLY']) {
+  // 0) Teste des candidates de REMPLACEMENT pour les 7 actions passées
+  //    premium chez FMP (200 = gratuite ✓, 402 = premium ✗).
+  const REMPLACANTES = [
+    'SO', 'DUK', 'XEL',          // services publics (remplace NEE)
+    'CL', 'KMB', 'MDLZ',         // conso de base (remplace PG)
+    'SBUX', 'HD', 'NKE',         // conso (remplace MCD)
+    'MRK', 'ABBV', 'PFE',        // pharma (remplace LLY)
+    'AXP',                       // paiements (remplace MA)
+    'QCOM', 'TXN', 'AMAT',       // semi-conducteurs (remplace AVGO/ASML)
+  ]
+  const testRemplacantes = {}
+  for (const s of REMPLACANTES) {
     try {
       const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${s}&apikey=${key}`)
-      testBrutFmp[s] = { status: r.status, body: (await r.text()).slice(0, 250) }
+      testRemplacantes[s] = r.status === 200 ? '✓ gratuite' : `✗ statut ${r.status}`
     } catch (e) {
-      testBrutFmp[s] = { error: e?.message || 'erreur réseau' }
+      testRemplacantes[s] = `✗ ${e?.message || 'erreur réseau'}`
     }
   }
 
@@ -67,7 +75,7 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   return res.status(200).json({
     bilan: manquants === 0 ? '✓ TOUT EST OK — aucun prix manquant' : `✗ ${manquants} prix manquant(s), voir détail`,
-    test_brut_fmp: testBrutFmp,
+    test_remplacantes: testRemplacantes,
     taux_usd_cad: data.taux_usd_cad,
     actions,
     metaux,

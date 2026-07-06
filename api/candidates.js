@@ -2,11 +2,15 @@
 // Modifiable librement : ajoute/retire des tickers ici.
 
 // Actions (tickers américains reconnus par FMP).
+// ⚠️ L'offre gratuite FMP ne couvre qu'une liste limitée de symboles :
+// chaque ticker ci-dessous a été VÉRIFIÉ gratuit (statut 200). Avant d'en
+// ajouter un, le tester (un 402 = réservé aux offres payantes).
+// Vérifiées gratuites en réserve : SBUX, NKE, BAC, GS, CVX, INTC, CSCO, T.
 export const STOCKS = [
   // Ancres défensives
-  'KO', 'NEE', 'LMT', 'PG', 'JNJ', 'COST', 'WMT', 'MCD', 'PEP', 'UNH',
+  'KO', 'PEP', 'WMT', 'COST', 'JNJ', 'UNH', 'LMT', 'ABBV', 'PFE', 'VZ',
   // Convictions / croissance
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'AVGO', 'ASML', 'V', 'MA', 'AMD', 'LLY',
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'V', 'AMD', 'TSLA', 'JPM', 'XOM', 'DIS',
 ]
 
 // Cryptos avec leur "tier" (niveau de solidité) et leur identifiant CoinGecko.

@@ -36,6 +36,13 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   platine : aucune source gratuite trouvée (testé metals-api.com et Twelve
   Data, tous deux payants pour ces deux métaux) → retirés de l'app pour
   l'instant (voir README, section 5).
+- **L'offre gratuite FMP est une liste blanche de symboles** : beaucoup de
+  grandes capitalisations sont passées premium (402), dont NEE, PG, MCD,
+  AVGO, ASML, MA, LLY, SO, DUK, XEL, CL, KMB, MDLZ, HD, MRK, AXP, QCOM,
+  TXN, AMAT, ORCL, CRM, IBM, CAT. La liste `STOCKS` de `api/candidates.js`
+  ne contient que des tickers **vérifiés gratuits** ; réserve vérifiée
+  gratuite non utilisée : SBUX, NKE, BAC, GS, CVX, INTC, CSCO, T. Toujours
+  tester un nouveau ticker avant de l'ajouter (200 = ok, 402 = payant).
 
 ## Variables d'environnement (dans Vercel, PAS dans le repo)
 
@@ -79,17 +86,18 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   s'affichent tous. Outils de diagnostic (`api/debug-fmp.js`,
   `api/debug-metals.js`) retirés.
 
-## ⚠️ En attente (reprise de session)
-
-- **Quota FMP du jour épuisé** (429 « Limit Reach ») après une journée de
-  tests — rien de cassé, remise à zéro automatique ~24 h. **À faire ensuite** :
-  1) l'utilisateur re-teste « ➕ Ajouter ces placements » depuis le Calculateur
-  (les correctifs SUI/AVAX + rafale FMP + doublons mentions sont déployés mais
-  pas encore re-testés à cause du quota) ; 2) ouvrir `…/api/debug-prices` une
-  fois pour confirmer « TOUT EST OK » ; 3) retirer `api/debug-prices.js`.
-- Audit complet déjà fait : les 11 cryptos ✓ sur les 2 chemins (génération +
-  portefeuille), 22 actions ✓, 2 métaux ✓, FX ✓. Économiser le quota : chaque
-  génération / audit / ajout ≈ 24 requêtes FMP (250/jour).
+- **Audit complet validé** ✅ (juillet 2026) : « ➕ Ajouter ces placements »
+  re-testé OK par l'utilisateur ; 11 cryptos ✓ sur les 2 chemins (génération
+  + portefeuille), 22 actions vérifiées gratuites ✓, 2 métaux ✓, FX ✓.
+  Correctifs déployés : mentions honorables visibles dans le Calculateur,
+  doublons tops/mentions éliminés (prompt + filet serveur), appels FMP par
+  petits groupes sur les 2 chemins (anti-rafale), table CoinGecko complétée
+  (SUI/AVAX/BNB/ONDO/HYPE), liste STOCKS reconstruite avec des tickers
+  gratuits vérifiés. Outil d'audit `api/debug-prices.js` retiré.
+- Économiser le quota FMP : chaque génération / ajout ≈ 24 requêtes (250/jour).
+- La prochaine génération de recommandations utilisera la nouvelle liste
+  d'actions (TSLA, JPM, XOM, DIS, ABBV, PFE, VZ remplacent les 7 passées
+  premium).
 
 ## Prochaines étapes
 

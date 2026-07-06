@@ -12,14 +12,16 @@ export default async function handler(req, res) {
   const key = process.env.FMP_API_KEY
   if (!key) return res.status(500).json({ error: 'FMP_API_KEY manquante côté serveur.' })
 
-  // 0) Un appel FMP brut, avec statut HTTP visible (pour distinguer un quota
-  //    épuisé 429 d'un autre problème).
-  let testBrutFmp
-  try {
-    const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=${key}`)
-    testBrutFmp = { status: r.status, body: (await r.text()).slice(0, 300) }
-  } catch (e) {
-    testBrutFmp = { error: e?.message || 'erreur réseau' }
+  // 0) Appels FMP bruts, avec statut HTTP visible, sur les symboles qui
+  //    échouent systématiquement (pour voir la vraie raison du refus).
+  const testBrutFmp = {}
+  for (const s of ['NEE', 'PG', 'MA', 'LLY']) {
+    try {
+      const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${s}&apikey=${key}`)
+      testBrutFmp[s] = { status: r.status, body: (await r.text()).slice(0, 250) }
+    } catch (e) {
+      testBrutFmp[s] = { error: e?.message || 'erreur réseau' }
+    }
   }
 
   // 1) Le chemin de la GÉNÉRATION IA (FMP individuel + CoinGecko markets + FX).
@@ -65,7 +67,7 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   return res.status(200).json({
     bilan: manquants === 0 ? '✓ TOUT EST OK — aucun prix manquant' : `✗ ${manquants} prix manquant(s), voir détail`,
-    test_brut_fmp_AAPL: testBrutFmp,
+    test_brut_fmp: testBrutFmp,
     taux_usd_cad: data.taux_usd_cad,
     actions,
     metaux,

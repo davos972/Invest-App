@@ -133,9 +133,10 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   l'utilisateur (⚠️ impulsion / 🎯 consolidation / 🔪 chute / 👍 zone
   correcte — logique dans `src/lib/history.js`), + fourchette observée
   depuis l'achat en complément. Fenêtre de rattachement achat↔instantané :
-  ±10 jours. **Reste à faire par l'utilisateur** : exécuter le SQL de la
-  table dans Supabase (SQL Editor), sinon les instantanés échoueront en
-  silence et la section affichera « contexte inconnu ».
+  ±10 jours. **Validé en réel par l'utilisateur** : SQL exécuté dans
+  Supabase, génération OK, verdicts affichés. Les achats antérieurs de plus
+  de 10 jours au premier instantané restent « contexte inconnu » pour
+  toujours (pas de données historiques gratuites) — c'est normal.
   Pas de flux de VENTE dans l'app pour l'instant → « ai-je vendu au bon
   moment » sera possible seulement si on ajoute la vente un jour.
 - **Phase 3** : sentiment Reddit / Google Trends, affinage prompts.

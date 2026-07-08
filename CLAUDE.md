@@ -129,17 +129,38 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   présélectionne, le prompt tranche sur la valorisation.
 - **ROE** absent de `ratios-ttm` → calculé : `netIncomePerShareTTM ÷
   shareholdersEquityPerShareTTM` (null si capitaux ≤ 0 → rejet).
-- Plafonné à **~20 candidats/profil** (triés par volume), pour tenir la limite
-  60 s de Vercel (~80 appels fondamentaux + cours des survivants). Concurrence
-  via `mapPool`. Champs ajoutés au prompt : `profil_origine`, `secteur`,
-  `croissance_ca_pct`, `croissance_bpa_pct`, `marge_brute_pct`, `roe_pct`
-  (+ `per`, `bpa_cad`, `marge_nette_pct`, `dette_sur_capitaux_propres`, `peg`).
+- Plafonné à **~30 candidats/profil** (triés par volume), pour tenir la limite
+  60 s de Vercel (les appels FMP sont rapides/parallélisés via `mapPool` ; c'est
+  Claude qui domine le temps, sortie plafonnée à ~26 items). Champs ajoutés au
+  prompt : `profil_origine`, `secteur`, `croissance_ca_pct`, `croissance_bpa_pct`,
+  `marge_brute_pct`, `roe_pct` (+ `per`, `bpa_cad`, `marge_nette_pct`,
+  `dette_sur_capitaux_propres`, `peg`).
 - **Filet de sécurité** : si < 4 survivants (échec réseau / screen trop strict),
   repli automatique sur la liste statique `STOCKS` de `candidates.js`.
-- Pour ratisser plus large un jour (des centaines de noms) : découper le
-  screening en une étape dédiée (hors limite 60 s), pas encore fait.
-- Reste à valider en réel : lancer une génération et vérifier que les actions
-  affichées sont bien des candidats screenés (secteurs variés, croissance).
+- **Validé en réel** (juillet 2026) : nouveaux noms, deux profils remplis,
+  analyses jugées très bonnes par l'utilisateur. Le vivier étant plus court que
+  l'ancienne liste statique, on a élargi le plafond 20→30 pour retrouver 10
+  mentions honorables (sinon ~7). Prompt : « 16 principales », consigne « viser
+  10 mentions distinctes », et **plus de mention de l'absence de contexte macro**
+  (Claude le signalait car on le lui disait — reformulé).
+
+## Contourner la limite 60 s de Vercel (décision : PLUS TARD)
+
+- Le plafond 60 s ne gêne PAS aujourd'hui (la génération tient large). Il ne
+  gênera que si on veut **aller plus loin** : effort Claude `medium`/`high`,
+  vivier de centaines de candidats, screening en 2 temps.
+- **Décision (juillet 2026, avec l'utilisateur)** : on NE l'implémente PAS
+  maintenant — on est en phase de test, et le cycle rapide « bouton Générer sur
+  Vercel » est précieux pour itérer. On migrera **quand la logique sera stable**
+  et qu'on voudra volontairement pousser l'analyse en profondeur.
+- **Voie retenue = gratuite** : sortir la génération hebdo du lundi de Vercel
+  vers un **GitHub Action** (aucune limite de temps ; le bouton manuel reste sur
+  Vercel en version « rapide »). Secrets à mettre côté GitHub :
+  `ANTHROPIC_API_KEY`, `FMP_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `RECO_OWNER_USER_ID`. Réutilise `generation-core.js` (Node/ESM pur).
+  Alternative écartée : Vercel Pro (~20 $/mois, `maxDuration=300`, 1 ligne).
+- **Contexte macro** : non fourni pour l'instant. Chantier de Phase 3 (trouver
+  une source gratuite : taux, indices, inflation…) — à faire un jour.
 
 ## Prochaines étapes
 

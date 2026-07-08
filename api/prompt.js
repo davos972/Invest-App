@@ -64,7 +64,10 @@ Date de génération : ${today}
 Devise d'affichage : CAD
 Taux de change USD -> CAD utilisé : ${data.taux_usd_cad}
 
-CONTEXTE MACRO : non fourni cette semaine (ne pas inventer de contexte macro).
+CONTEXTE MACRO : base-toi uniquement sur les données fondamentales et de prix
+ci-dessous. N'invente aucun événement macroéconomique, et NE MENTIONNE PAS
+l'absence de contexte macro (ne l'évoque nulle part dans tes analyses, résumés
+ou avertissements) — reste simplement centré sur les données fournies.
 
 DONNÉES ACTIONS (prix en CAD). Ces actions ont été PRÉSÉLECTIONNÉES par un
 screener automatique selon deux profils (champ "profil_origine") : "securitaire"

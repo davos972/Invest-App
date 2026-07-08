@@ -21,8 +21,11 @@ import {
 // Nombre d'appels FMP en parallèle. Large sous 300/min pour nos volumes.
 const CONCURRENCE = 10
 // Candidats analysés à fond par profil. Plafonné pour tenir la limite 60 s de
-// Vercel (~20/profil × 2 profils × 2 appels fondamentaux = ~80 appels).
-const PLAFOND_PAR_PROFIL = 20
+// Vercel. Les appels FMP sont rapides et parallélisés (mapPool) : c'est
+// l'analyse de Claude qui domine le temps, et sa sortie reste plafonnée à ~26
+// items — augmenter ce vivier coûte donc très peu de temps mais donne assez de
+// « reste » pour remplir les 10 mentions honorables.
+const PLAFOND_PAR_PROFIL = 30
 // Bourses ciblées (actions américaines cotées).
 const EXCHANGES = ['NASDAQ', 'NYSE']
 // En dessous de ce nombre de survivants, on retombe sur la liste statique

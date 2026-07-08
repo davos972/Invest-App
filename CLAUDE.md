@@ -237,8 +237,12 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   de débit → null, la génération continue). Le prompt le cadre comme signal
   SECONDAIRE (conforte/nuance, jamais moteur ; méfiance sur l'engouement
   spéculatif). Limite StockTwits ~200 req/h par IP → OK pour un usage hebდo ;
-  attention en test si beaucoup de générations d'affilée. Reste à valider en
-  réel : lancer une génération et vérifier que Claude évoque le sentiment.
+  attention en test si beaucoup de générations d'affilée. **Validé en réel**
+  (juillet 2026). Le sentiment est aussi RÉINJECTÉ dans les recommandations
+  stockées (`attachSentiment` dans `generation-core.js`, par ticker) et AFFICHÉ
+  dans l'analyse détaillée (`SentimentBox` dans `AssetDetail.jsx` : humeur
+  haussière/baissière/mitigée + volume ; masquée si indisponible). Champ
+  `sentiment_social` exposé via `normalize` (`src/lib/recommendations.js`).
 - **Phase 3** : affinage des prompts et de la pondération selon l'usage.
 
 ## Carte des fichiers clés

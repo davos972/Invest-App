@@ -64,10 +64,18 @@ Date de génération : ${today}
 Devise d'affichage : CAD
 Taux de change USD -> CAD utilisé : ${data.taux_usd_cad}
 
-CONTEXTE MACRO : base-toi uniquement sur les données fondamentales et de prix
-ci-dessous. N'invente aucun événement macroéconomique, et NE MENTIONNE PAS
-l'absence de contexte macro (ne l'évoque nulle part dans tes analyses, résumés
-ou avertissements) — reste simplement centré sur les données fournies.
+CONTEXTE MACRO (météo générale des marchés cette semaine) :
+${JSON.stringify(data.macro, null, 1)}
+Comment le lire : le VIX est l'« indice de la peur » — bas (< 15) = marché
+serein, appétit pour le risque ; élevé (> 25) = marché craintif, sois alors plus
+prudent sur les actifs risqués et les petites capitalisations. Un taux 10 ans
+élevé ou nettement au-dessus du taux 2 ans pèse sur les valorisations, surtout
+les actions de croissance et la crypto ; si le taux 2 ans dépasse le 10 ans
+(courbe inversée), c'est un signal de prudence. Les niveaux et variations du
+S&P 500 et du Nasdaq indiquent le régime (hausse ou repli). Sers-toi de ce
+contexte pour NUANCER la confiance et l'exposition au risque, sans en faire
+l'élément central (l'analyse fondamentale reste prioritaire). N'invente aucune
+autre donnée macro ; si un champ est absent (null), ignore-le sans le signaler.
 
 DONNÉES ACTIONS (prix en CAD). Ces actions ont été PRÉSÉLECTIONNÉES par un
 screener automatique selon deux profils (champ "profil_origine") : "securitaire"

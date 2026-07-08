@@ -5,11 +5,37 @@
 // - Crypto : CoinGecko, directement en CAD, en un seul appel.
 // Tier FMP Starter (300 req/min) : les volumes d'appels restent très confortables.
 import { CRYPTOS, METALS } from './candidates.js'
-import { getJson, cad, fetchUsdToCad, fetchQuote, mapPool } from './fmp-utils.js'
+import { getJson, cad, fetchUsdToCad, fetchQuote, fetchTreasuryRates, mapPool } from './fmp-utils.js'
 import { screenStockCandidates } from './screener.js'
 
 function quoteChange(q) {
   return q.changePercentage ?? q.changesPercentage ?? null
+}
+
+// Indices de marché suivis pour le contexte macro.
+const INDICES = [
+  { symbol: '^GSPC', cle: 'sp500' },
+  { symbol: '^IXIC', cle: 'nasdaq' },
+  { symbol: '^VIX', cle: 'vix' },
+]
+
+// Tableau de bord macro : indices (S&P 500, Nasdaq), VIX (indice de la peur) et
+// taux du Trésor (2 ans / 10 ans). Météo générale des marchés de la semaine.
+async function fetchMacro(fmpKey) {
+  const [quotes, tr] = await Promise.all([
+    mapPool(INDICES, 3, (idx) => fetchQuote(idx.symbol, fmpKey)),
+    fetchTreasuryRates(fmpKey),
+  ])
+  const q = Object.fromEntries(INDICES.map((idx, i) => [idx.cle, quotes[i]]))
+  const indice = (x) => (x ? { niveau: x.price ?? null, variation_jour_pct: quoteChange(x) } : null)
+  return {
+    sp500: indice(q.sp500),
+    nasdaq: indice(q.nasdaq),
+    vix: q.vix?.price ?? null,
+    taux_2ans_pct: tr?.year2 ?? null,
+    taux_10ans_pct: tr?.year10 ?? null,
+    date_taux: tr?.date ?? null,
+  }
 }
 
 // Données crypto (CoinGecko, directement en CAD, en un seul appel).
@@ -66,14 +92,16 @@ async function fetchMetals(fmpKey, rate) {
 // récupérés en parallèle pour tenir la limite de 60 s de Vercel.
 export async function gatherMarketData(fmpKey) {
   const rate = await fetchUsdToCad()
-  const [actions, metaux, crypto] = await Promise.all([
+  const [actions, metaux, crypto, macro] = await Promise.all([
     screenStockCandidates(fmpKey, rate),
     fetchMetals(fmpKey, rate),
     fetchCryptos(),
+    fetchMacro(fmpKey),
   ])
 
   return {
     taux_usd_cad: +rate.toFixed(4),
+    macro,
     actions,
     crypto,
     metaux,

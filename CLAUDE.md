@@ -159,8 +159,16 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   `ANTHROPIC_API_KEY`, `FMP_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
   `RECO_OWNER_USER_ID`. Réutilise `generation-core.js` (Node/ESM pur).
   Alternative écartée : Vercel Pro (~20 $/mois, `maxDuration=300`, 1 ligne).
-- **Contexte macro** : non fourni pour l'instant. Chantier de Phase 3 (trouver
-  une source gratuite : taux, indices, inflation…) — à faire un jour.
+- **Contexte macro** ✅ AJOUTÉ (juillet 2026) : tableau de bord macro fourni au
+  prompt via FMP (aucune nouvelle clé). `fetchMacro` dans `market-data.js` :
+  S&P 500 (`^GSPC`) + Nasdaq (`^IXIC`) niveau/variation, VIX (`^VIX`, indice de
+  la peur), taux du Trésor 2 ans / 10 ans (endpoint `/stable/treasury-rates`,
+  champs `year2`/`year10` ; `^TNX` NON reconnu par FMP → écarté). Le prompt
+  explique comment lire ces signaux (VIX, courbe des taux, régime des indices)
+  pour NUANCER la confiance, sans supplanter l'analyse fondamentale. Reste à
+  valider en réel : lancer une génération et vérifier que Claude parle du
+  contexte macro (VIX, taux) dans ses analyses. Inflation (CPI) : pas encore,
+  extension possible via `/stable/economic-indicators`.
 
 ## Prochaines étapes
 

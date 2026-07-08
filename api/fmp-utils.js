@@ -76,6 +76,14 @@ export async function fetchGrowth(symbol, key) {
   return Array.isArray(data) && data[0] ? data[0] : null
 }
 
+// Taux du Trésor américain (courbe complète : month1…year30). On renvoie le
+// relevé le plus récent. Sert au contexte macro (taux 2 ans / 10 ans).
+export async function fetchTreasuryRates(key) {
+  const data = await getJson(`${FMP}/stable/treasury-rates?apikey=${key}`)
+  if (!Array.isArray(data) || data.length === 0) return null
+  return data.reduce((a, b) => (a && a.date >= b.date ? a : b))
+}
+
 // Screener : présélection grossière (capitalisation, volume, bourse…).
 // Renvoie une liste de sociétés (symbol, companyName, marketCap, sector,
 // beta, volume…), SANS données de croissance ni de marge.

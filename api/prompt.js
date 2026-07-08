@@ -66,12 +66,17 @@ Taux de change USD -> CAD utilisé : ${data.taux_usd_cad}
 
 CONTEXTE MACRO : non fourni cette semaine (ne pas inventer de contexte macro).
 
-DONNÉES ACTIONS (prix en CAD). Cette semaine tu disposes, pour chaque action, du
-cours, de la variation du jour, des moyennes 50/200 jours, de la capitalisation,
-du ratio cours/bénéfice (P/E) et du bénéfice par action. C'est le jeu de données
-NORMAL attendu : base ton analyse sur la valorisation (P/E), la taille et la
-tendance. Ne considère PAS l'absence de marges/ROIC/dette comme des « données
-incomplètes » et n'abaisse pas la confiance pour cette raison :
+DONNÉES ACTIONS (prix en CAD). Pour chaque action tu disposes du cours, de la
+variation du jour, des moyennes 50/200 jours, du plus haut/bas sur 52 semaines,
+de la capitalisation, du ratio cours/bénéfice (P/E, champ "per"), du bénéfice
+par action (champ "bpa_cad"), de la marge nette en % (rentabilité, champ
+"marge_nette_pct"), du ratio dette/capitaux propres (endettement, champ
+"dette_sur_capitaux_propres" — au-dessus de 1,5–2 l'entreprise est très endettée)
+et du PEG (le P/E rapporté à la croissance des bénéfices, champ "peg" — proche de
+1 = croissance payée à un prix raisonnable). Base ton analyse GARP là-dessus :
+valorisation (P/E, PEG), rentabilité (marge nette), solidité financière (dette)
+et tendance (moyennes, taille). Si une de ces valeurs vaut null pour une action,
+ignore-la simplement et abaisse légèrement la confiance, sans en faire un drame :
 ${JSON.stringify(data.actions, null, 1)}
 
 DONNÉES CRYPTO (prix et montants en CAD ; tier = niveau de solidité) :

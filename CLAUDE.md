@@ -116,10 +116,15 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 
 - **Palladium / Platine** ✅ REVENUS (juillet 2026) grâce au tier FMP Starter,
   via leurs ETF (PALL/PPLT). Ne plus les considérer comme « retirés ».
-- **Fondamentaux détaillés** (marges, ROIC, dette) : non fournis actuellement
-  (`api/market-data.js` ne donne que cours, P/E, capitalisation, BPA, moyennes
-  50/200j). À enrichir avec parcimonie (1 appel/action) ou via une offre FMP
-  payante — décision utilisateur.
+- **Fondamentaux détaillés** ✅ AJOUTÉS (juillet 2026, tier Starter) :
+  `/stable/quote` ne renvoie plus le P/E ni le bénéfice par action → on récupère
+  ces données (+ marge nette, dette/capitaux propres, PEG) via un appel par
+  action à `/stable/ratios-ttm` (`fetchRatiosIndividually` dans
+  `api/market-data.js`). Champs ajoutés aux données actions : `per`, `bpa_cad`,
+  `marge_nette_pct`, `dette_sur_capitaux_propres`, `peg`. Le prompt les décrit
+  et cadre l'analyse GARP dessus. ~34 appels FMP en plus (~73/génération au
+  total, large sous 300/min). Reste à valider en réel : relancer une génération
+  et vérifier que Claude ne dit plus « données de valorisation non fournies ».
 - **B3 — Automatisation du lundi** ✅ TERMINÉ et testé (juillet 2026) :
   `api/cron-generate.js` + cron Vercel `0 11 * * 1` (lundi ~6-7 h heure de
   l'Est), cœur partagé dans `api/generation-core.js`, bouton manuel conservé.

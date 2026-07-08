@@ -1,6 +1,7 @@
 // Récupération des données de marché réelles pour l'analyse IA.
-// On interroge FMP symbole par symbole (~39 appels par génération). Avec le tier
-// Starter (300 appels/minute), c'est très confortable pour un usage hebdomadaire.
+// On interroge FMP symbole par symbole : ~39 cours + ~34 ratios financiers
+// (P/E, marges, dette…) = ~73 appels par génération. Avec le tier Starter
+// (300 appels/minute), c'est très confortable pour un usage hebdomadaire.
 // Ce montage a fait ses preuves : on le garde tel quel plutôt que de repasser à
 // la requête groupée, pour ne pas réintroduire de risque inutilement.
 import { STOCKS, CRYPTOS, METALS } from './candidates.js'
@@ -30,6 +31,10 @@ async function getJson(url, attempt = 0) {
 }
 
 const cad = (v, rate) => (v != null && Number.isFinite(v) ? +(v * rate).toFixed(2) : null)
+// Arrondit un ratio en gardant les valeurs absentes à null (jamais 0 par erreur).
+const num = (v, d = 2) => (v != null && Number.isFinite(v) ? +(+v).toFixed(d) : null)
+// Convertit une fraction (0.27) en pourcentage arrondi (27), null si absent.
+const pct = (v, d = 1) => (v != null && Number.isFinite(v) ? +(v * 100).toFixed(d) : null)
 
 // Taux USD -> CAD (gratuit, sans clé).
 async function fetchUsdToCad() {
@@ -59,6 +64,26 @@ async function fetchQuotesIndividually(symbols, key) {
 
 function quoteChange(q) {
   return q.changePercentage ?? q.changesPercentage ?? null
+}
+
+// Ratios financiers TTM d'un symbole (P/E, bénéfice par action, marges, dette,
+// PEG…). Endpoint DISTINCT de /stable/quote, qui ne renvoie plus ces données
+// depuis la réorganisation de l'API FMP. Ouvert sur le tier Starter.
+async function fetchOneRatios(symbol, key) {
+  const data = await getJson(`${FMP}/stable/ratios-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${key}`)
+  return Array.isArray(data) && data[0] ? data[0] : null
+}
+
+// Ratios de toutes les actions, un appel par symbole, par petits groupes.
+async function fetchRatiosIndividually(symbols, key) {
+  const TAILLE_GROUPE = 6
+  const out = []
+  for (let i = 0; i < symbols.length; i += TAILLE_GROUPE) {
+    const groupe = symbols.slice(i, i + TAILLE_GROUPE)
+    out.push(...(await Promise.all(groupe.map((s) => fetchOneRatios(s, key)))))
+    if (i + TAILLE_GROUPE < symbols.length) await sleep(250)
+  }
+  return out.filter(Boolean)
 }
 
 // Données crypto (CoinGecko, directement en CAD, en un seul appel).
@@ -99,12 +124,19 @@ export async function gatherMarketData(fmpKey) {
   const cryptoPromise = fetchCryptos()
 
   const allSymbols = [...STOCKS, ...METALS.map((m) => m.ticker)]
-  const quotes = await fetchQuotesIndividually(allSymbols, fmpKey)
+  // Cours (actions + métaux) et ratios financiers (actions seulement) en
+  // parallèle, pour rester bien sous la limite de 60 s de Vercel.
+  const [quotes, ratiosList] = await Promise.all([
+    fetchQuotesIndividually(allSymbols, fmpKey),
+    fetchRatiosIndividually(STOCKS, fmpKey),
+  ])
   const bySymbol = Object.fromEntries(quotes.map((q) => [q.symbol, q]))
+  const ratiosBySymbol = Object.fromEntries(ratiosList.map((r) => [r.symbol, r]))
 
   const actions = STOCKS.map((symbol) => {
     const q = bySymbol[symbol]
     if (!q) return null
+    const rt = ratiosBySymbol[symbol]
     return {
       nom: q.name || symbol,
       ticker: symbol,
@@ -115,8 +147,12 @@ export async function gatherMarketData(fmpKey) {
       haut_52s_cad: cad(q.yearHigh, rate),
       bas_52s_cad: cad(q.yearLow, rate),
       market_cap_usd: q.marketCap ?? null,
-      per: q.pe ?? null,
-      bpa_usd: q.eps ?? null,
+      // Fondamentaux issus de /stable/ratios-ttm (absents de /stable/quote).
+      per: rt ? num(rt.priceToEarningsRatioTTM, 1) : null,
+      bpa_cad: rt ? cad(rt.netIncomePerShareTTM, rate) : null,
+      marge_nette_pct: rt ? pct(rt.netProfitMarginTTM) : null,
+      dette_sur_capitaux_propres: rt ? num(rt.debtToEquityRatioTTM, 2) : null,
+      peg: rt ? num(rt.priceToEarningsGrowthRatioTTM, 2) : null,
     }
   }).filter(Boolean)
 

@@ -112,6 +112,35 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   lancer une génération pour valider en réel l'affichage des 4 métaux et des
   nouvelles actions.
 
+## Screening dynamique des actions (juillet 2026)
+
+- **`api/screener.js`** : les actions candidates ne viennent plus d'une liste
+  statique mais d'un **screening dynamique** via l'endpoint FMP
+  `/stable/company-screener`. Deux profils (`PROFILS` dans le fichier) :
+  - **sécuritaire** : cap > 10 Md$, volume > 1 M ; garde-fou : croissance CA
+    > 8 %, marge nette > 10 %, ROE > 12 %, dette/capitaux < 1,5.
+  - **risqué** : cap 2–8 Md$, volume > 300 k ; garde-fou : croissance CA
+    > 30 %, marge brute > 40 %, croissance BPA > 20 %.
+- Le screener FMP ne filtre QUE sur capitalisation/volume/bourse. Les critères
+  de croissance/marge NE sont PAS des paramètres du screener → ils sont
+  appliqués **en code**, après récupération des fondamentaux (`ratios-ttm` +
+  `financial-growth`), comme **garde-fou anti-bruit** : tout candidat aux
+  fondamentaux clés manquants ou insuffisants est REJETÉ. Le screener
+  présélectionne, le prompt tranche sur la valorisation.
+- **ROE** absent de `ratios-ttm` → calculé : `netIncomePerShareTTM ÷
+  shareholdersEquityPerShareTTM` (null si capitaux ≤ 0 → rejet).
+- Plafonné à **~20 candidats/profil** (triés par volume), pour tenir la limite
+  60 s de Vercel (~80 appels fondamentaux + cours des survivants). Concurrence
+  via `mapPool`. Champs ajoutés au prompt : `profil_origine`, `secteur`,
+  `croissance_ca_pct`, `croissance_bpa_pct`, `marge_brute_pct`, `roe_pct`
+  (+ `per`, `bpa_cad`, `marge_nette_pct`, `dette_sur_capitaux_propres`, `peg`).
+- **Filet de sécurité** : si < 4 survivants (échec réseau / screen trop strict),
+  repli automatique sur la liste statique `STOCKS` de `candidates.js`.
+- Pour ratisser plus large un jour (des centaines de noms) : découper le
+  screening en une étape dédiée (hors limite 60 s), pas encore fait.
+- Reste à valider en réel : lancer une génération et vérifier que les actions
+  affichées sont bien des candidats screenés (secteurs variés, croissance).
+
 ## Prochaines étapes
 
 - **Palladium / Platine** ✅ REVENUS (juillet 2026) grâce au tier FMP Starter,
@@ -173,9 +202,12 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 - Serveur : `api/generation-core.js` (cœur partagé de la génération, effort
   `low`), `api/generate-recommendations.js` (bouton manuel, `maxDuration=60`),
   `api/cron-generate.js` (cron du lundi, secret + service_role),
-  `api/market-data.js` (données FMP/CoinGecko/FX, appels individuels par
-  symbole), `api/prompt.js` (prompt + schéma JSON), `api/candidates.js`
-  (liste ciblée), `api/stock-prices.js` (prix actions/métaux).
+  `api/market-data.js` (orchestration : actions via screener, métaux + crypto + FX),
+  `api/screener.js` (screening dynamique des actions, 2 profils + garde-fou
+  fondamental), `api/fmp-utils.js` (primitives FMP partagées : getJson, cad/num/
+  pct, mapPool, fetchQuote/RatiosTtm/Growth/Screener), `api/prompt.js` (prompt +
+  schéma JSON), `api/candidates.js` (STOCKS de repli + CRYPTOS + METALS),
+  `api/stock-prices.js` (prix actions/métaux pour le portefeuille).
 - Frontend : `src/lib/recommendations.js` (lecture/génération), `src/lib/
   portfolio.js`, `src/lib/prices.js`, `src/lib/supabase.js`, `src/lib/weights.js`,
   `src/lib/preferences.js`. Pages dans `src/pages/`, composants dans

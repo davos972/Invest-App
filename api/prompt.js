@@ -66,17 +66,28 @@ Taux de change USD -> CAD utilisé : ${data.taux_usd_cad}
 
 CONTEXTE MACRO : non fourni cette semaine (ne pas inventer de contexte macro).
 
-DONNÉES ACTIONS (prix en CAD). Pour chaque action tu disposes du cours, de la
-variation du jour, des moyennes 50/200 jours, du plus haut/bas sur 52 semaines,
-de la capitalisation, du ratio cours/bénéfice (P/E, champ "per"), du bénéfice
-par action (champ "bpa_cad"), de la marge nette en % (rentabilité, champ
-"marge_nette_pct"), du ratio dette/capitaux propres (endettement, champ
-"dette_sur_capitaux_propres" — au-dessus de 1,5–2 l'entreprise est très endettée)
-et du PEG (le P/E rapporté à la croissance des bénéfices, champ "peg" — proche de
-1 = croissance payée à un prix raisonnable). Base ton analyse GARP là-dessus :
-valorisation (P/E, PEG), rentabilité (marge nette), solidité financière (dette)
-et tendance (moyennes, taille). Si une de ces valeurs vaut null pour une action,
-ignore-la simplement et abaisse légèrement la confiance, sans en faire un drame :
+DONNÉES ACTIONS (prix en CAD). Ces actions ont été PRÉSÉLECTIONNÉES par un
+screener automatique selon deux profils (champ "profil_origine") : "securitaire"
+(grande capitalisation, croissance solide, bonne rentabilité, faible dette) ou
+"risque" (moyenne capitalisation en forte croissance, marges élevées). Toutes
+ont déjà passé un filtre de qualité fondamentale — mais le screener NE DÉCIDE
+PAS : c'est à toi de trancher sur la valorisation et de classer. Le
+"profil_origine" est une indication d'origine, pas une obligation de catégorie.
+
+Pour chaque action tu disposes : cours, variation du jour, moyennes 50/200 jours,
+plus haut/bas 52 semaines, capitalisation, secteur, et les fondamentaux :
+- "per" : ratio cours/bénéfice (P/E) — valorisation.
+- "peg" : P/E rapporté à la croissance — proche de 1 = croissance à prix raisonnable.
+- "bpa_cad" : bénéfice par action.
+- "croissance_ca_pct" : croissance du chiffre d'affaires sur un an (%).
+- "croissance_bpa_pct" : croissance du bénéfice par action sur un an (%).
+- "marge_brute_pct" / "marge_nette_pct" : marges (rentabilité).
+- "roe_pct" : rentabilité des capitaux propres (efficacité du capital).
+- "dette_sur_capitaux_propres" : endettement (au-dessus de 1,5–2 = très endettée).
+
+Base ton analyse GARP là-dessus : croissance (CA, BPA), qualité (marges, ROE),
+solidité (dette), valorisation (P/E, PEG) et tendance (moyennes, taille). Si une
+valeur vaut null, ignore-la et abaisse légèrement la confiance, sans drame :
 ${JSON.stringify(data.actions, null, 1)}
 
 DONNÉES CRYPTO (prix et montants en CAD ; tier = niveau de solidité) :

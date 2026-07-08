@@ -1,10 +1,12 @@
 // Liste ciblée des candidats analysés chaque semaine par l'IA.
 // Modifiable librement : ajoute/retire des tickers ici.
 
-// Actions (tickers américains reconnus par FMP).
-// Depuis le passage au tier FMP Starter (juillet 2026), la liste blanche de
-// l'offre gratuite ne s'applique plus : tous les symboles sont accessibles.
-// Liste diversifiée par secteur, entreprises solides et connues.
+// Actions — LISTE DE REPLI (fallback).
+// Les actions candidates sont désormais sélectionnées dynamiquement par le
+// screener (api/screener.js). Cette liste statique ne sert plus que de filet de
+// sécurité : si le screening échoue ou remonte trop peu de survivants, on
+// retombe sur ces valeurs éprouvées pour ne jamais partir avec 0 action.
+// Diversifiée par secteur, entreprises solides et connues.
 export const STOCKS = [
   // Consommation de base
   'KO', 'PEP', 'PG', 'COST', 'WMT', 'MCD', 'CL',

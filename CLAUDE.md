@@ -224,19 +224,35 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   DERNIER relevé price_history (`analyseContexteActuel` dans
   `src/lib/history.js`, textes au présent ; les verdicts d'achat passé
   utilisent les mêmes seuils, textes au passé).
-- **Phase 3** : sentiment Reddit / Google Trends, affinage prompts.
+- **Sentiment social** ✅ AJOUTÉ (juillet 2026) : via **StockTwits** (« le
+  Twitter de la bourse »), PAS Reddit — Reddit exige désormais une inscription
+  développeur révisée (developers.reddit.com, orientée Devvit), trop lourde pour
+  un signal secondaire. FMP social sentiment écarté aussi (réservé aux comptes
+  antérieurs à août 2025). StockTwits : gratuit, sans clé, répond depuis Vercel
+  (vérifié). `api/sentiment.js` (`fetchSentiment`) lit
+  `api.stocktwits.com/api/2/streams/symbol/{SYM}.json` (cryptos = suffixe `.X`,
+  ex. `BTC.X`) → par actif : `messages_recents` (volume), `haussiers`/`baissiers`
+  (messages étiquetés Bullish/Bearish). Attaché à chaque action/crypto
+  (champ `sentiment_social`) ; pas sur les métaux. Non bloquant (erreur/limite
+  de débit → null, la génération continue). Le prompt le cadre comme signal
+  SECONDAIRE (conforte/nuance, jamais moteur ; méfiance sur l'engouement
+  spéculatif). Limite StockTwits ~200 req/h par IP → OK pour un usage hebდo ;
+  attention en test si beaucoup de générations d'affilée. Reste à valider en
+  réel : lancer une génération et vérifier que Claude évoque le sentiment.
+- **Phase 3** : affinage des prompts et de la pondération selon l'usage.
 
 ## Carte des fichiers clés
 
 - Serveur : `api/generation-core.js` (cœur partagé de la génération, effort
   `low`), `api/generate-recommendations.js` (bouton manuel, `maxDuration=60`),
   `api/cron-generate.js` (cron du lundi, secret + service_role),
-  `api/market-data.js` (orchestration : actions via screener, métaux + crypto + FX),
-  `api/screener.js` (screening dynamique des actions, 2 profils + garde-fou
-  fondamental), `api/fmp-utils.js` (primitives FMP partagées : getJson, cad/num/
-  pct, mapPool, fetchQuote/RatiosTtm/Growth/Screener), `api/prompt.js` (prompt +
-  schéma JSON), `api/candidates.js` (STOCKS de repli + CRYPTOS + METALS),
-  `api/stock-prices.js` (prix actions/métaux pour le portefeuille).
+  `api/market-data.js` (orchestration : actions via screener, métaux + crypto +
+  FX + macro + sentiment), `api/screener.js` (screening dynamique des actions,
+  2 profils + garde-fou fondamental), `api/sentiment.js` (sentiment social
+  StockTwits, secondaire), `api/fmp-utils.js` (primitives FMP partagées :
+  getJson, cad/num/pct, mapPool, fetchQuote/RatiosTtm/Growth/Screener/Treasury),
+  `api/prompt.js` (prompt + schéma JSON), `api/candidates.js` (STOCKS de repli +
+  CRYPTOS + METALS), `api/stock-prices.js` (prix actions/métaux pour le portefeuille).
 - Frontend : `src/lib/recommendations.js` (lecture/génération), `src/lib/
   portfolio.js`, `src/lib/prices.js`, `src/lib/supabase.js`, `src/lib/weights.js`,
   `src/lib/preferences.js`. Pages dans `src/pages/`, composants dans

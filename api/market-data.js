@@ -7,6 +7,7 @@
 import { CRYPTOS, METALS } from './candidates.js'
 import { getJson, cad, fetchUsdToCad, fetchQuote, fetchTreasuryRates, mapPool } from './fmp-utils.js'
 import { screenStockCandidates } from './screener.js'
+import { fetchSentiment } from './sentiment.js'
 
 function quoteChange(q) {
   return q.changePercentage ?? q.changesPercentage ?? null
@@ -98,6 +99,17 @@ export async function gatherMarketData(fmpKey) {
     fetchCryptos(),
     fetchMacro(fmpKey),
   ])
+
+  // Sentiment social StockTwits (signal secondaire, non bloquant). Actions par
+  // leur ticker ; cryptos avec le suffixe StockTwits « .X ». Pas de sentiment
+  // pour les métaux (bruit sur les ETF). On l'attache à chaque actif.
+  const items = [
+    ...actions.map((a) => ({ ticker: a.ticker, stSymbol: a.ticker })),
+    ...crypto.map((c) => ({ ticker: c.ticker, stSymbol: `${c.ticker}.X` })),
+  ]
+  const sentiment = await fetchSentiment(items)
+  for (const a of actions) a.sentiment_social = sentiment[a.ticker] ?? null
+  for (const c of crypto) c.sentiment_social = sentiment[c.ticker] ?? null
 
   return {
     taux_usd_cad: +rate.toFixed(4),

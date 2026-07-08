@@ -1,7 +1,8 @@
 // Récupération des données de marché réelles pour l'analyse IA.
-// FMP a fermé sa requête groupée gratuite (renvoie 402) : on interroge donc
-// chaque symbole individuellement (~22 appels FMP par génération, largement
-// sous la limite gratuite de 250/jour pour un usage hebdomadaire).
+// On interroge FMP symbole par symbole (~39 appels par génération). Avec le tier
+// Starter (300 appels/minute), c'est très confortable pour un usage hebdomadaire.
+// Ce montage a fait ses preuves : on le garde tel quel plutôt que de repasser à
+// la requête groupée, pour ne pas réintroduire de risque inutilement.
 import { STOCKS, CRYPTOS, METALS } from './candidates.js'
 
 const FMP = 'https://financialmodelingprep.com'
@@ -43,8 +44,8 @@ async function fetchOneQuote(symbol, key) {
 }
 
 // Tous les cours (actions + métaux), un appel par symbole — par petits
-// groupes plutôt que tous d'un coup, pour ne pas déclencher le blocage
-// anti-rafale de l'offre gratuite FMP (sinon certains symboles sont perdus).
+// groupes plutôt que tous d'un coup, pour rester bien lisse vis-à-vis de la
+// limite FMP (300/min sur Starter). Simple et robuste.
 async function fetchQuotesIndividually(symbols, key) {
   const TAILLE_GROUPE = 6
   const quotes = []

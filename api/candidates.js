@@ -2,15 +2,26 @@
 // Modifiable librement : ajoute/retire des tickers ici.
 
 // Actions (tickers américains reconnus par FMP).
-// ⚠️ L'offre gratuite FMP ne couvre qu'une liste limitée de symboles :
-// chaque ticker ci-dessous a été VÉRIFIÉ gratuit (statut 200). Avant d'en
-// ajouter un, le tester (un 402 = réservé aux offres payantes).
-// Vérifiées gratuites en réserve : SBUX, NKE, BAC, GS, CVX, INTC, CSCO, T.
+// Depuis le passage au tier FMP Starter (juillet 2026), la liste blanche de
+// l'offre gratuite ne s'applique plus : tous les symboles sont accessibles.
+// Liste diversifiée par secteur, entreprises solides et connues.
 export const STOCKS = [
-  // Ancres défensives
-  'KO', 'PEP', 'WMT', 'COST', 'JNJ', 'UNH', 'LMT', 'ABBV', 'PFE', 'VZ',
-  // Convictions / croissance
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'V', 'AMD', 'TSLA', 'JPM', 'XOM', 'DIS',
+  // Consommation de base
+  'KO', 'PEP', 'PG', 'COST', 'WMT', 'MCD', 'CL',
+  // Santé
+  'JNJ', 'UNH', 'LLY', 'ABBV', 'MRK',
+  // Tech / croissance
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'AVGO', 'AMD', 'ORCL', 'CRM', 'ASML',
+  // Finance
+  'V', 'MA', 'JPM', 'AXP',
+  // Industrie / défense
+  'LMT', 'CAT',
+  // Énergie
+  'XOM', 'CVX',
+  // Services publics
+  'NEE',
+  // Auto / distribution
+  'TSLA', 'HD',
 ]
 
 // Cryptos avec leur "tier" (niveau de solidité) et leur identifiant CoinGecko.
@@ -28,9 +39,14 @@ export const CRYPTOS = [
   { symbol: 'HYPE', id: 'hyperliquid', tier: 3 },
 ]
 
-// Métaux précieux (cours au comptant, contrats à terme FMP — gratuits).
-// Palladium et platine retirés : aucune source gratuite trouvée chez FMP.
+// Métaux précieux. Or et argent = contrats à terme (cours au comptant).
+// Palladium et platine sont revenus avec le tier FMP Starter, via leurs ETF
+// (PALL / PPLT) : leur « prix » est donc un cours de part d'ETF en USD (converti
+// en CAD), et non un cours à l'once — ça reste parfaitement comparable pour
+// juger la tendance et le classement.
 export const METALS = [
   { nom: 'Or (Gold)', ticker: 'GCUSD' },
   { nom: 'Argent (Silver)', ticker: 'SIUSD' },
+  { nom: 'Palladium', ticker: 'PALL' },
+  { nom: 'Platine (Platinum)', ticker: 'PPLT' },
 ]

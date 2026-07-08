@@ -27,22 +27,24 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
 - **Supabase** : projet `ojjdvzgtpddlamncsygx`. RLS activée (chaque user ne voit
   que ses données).
 - **APIs** : CoinGecko (crypto, gratuit, sans clé, en CAD), FMP (actions +
-  or/argent, **offre gratuite = 250 requêtes/jour, un appel par symbole**),
+  métaux, **tier Starter — 300 requêtes/minute**, un appel par symbole),
   ExchangeRate open.er-api.com (USD→CAD), Claude API (moteur IA, `claude-opus-4-8`).
-- FMP a resserré son offre gratuite (juillet 2026) : la requête groupée
-  multi-symboles est passée payante (402), tout comme les ETF métaux
-  (GLD/SLV/PALL/PPLT), même interrogés un par un. Seuls les **contrats à terme
-  or (GCUSD) et argent (SIUSD)** restent gratuits chez FMP. Palladium et
-  platine : aucune source gratuite trouvée (testé metals-api.com et Twelve
-  Data, tous deux payants pour ces deux métaux) → retirés de l'app pour
-  l'instant (voir README, section 5).
-- **L'offre gratuite FMP est une liste blanche de symboles** : beaucoup de
-  grandes capitalisations sont passées premium (402), dont NEE, PG, MCD,
-  AVGO, ASML, MA, LLY, SO, DUK, XEL, CL, KMB, MDLZ, HD, MRK, AXP, QCOM,
-  TXN, AMAT, ORCL, CRM, IBM, CAT. La liste `STOCKS` de `api/candidates.js`
-  ne contient que des tickers **vérifiés gratuits** ; réserve vérifiée
-  gratuite non utilisée : SBUX, NKE, BAC, GS, CVX, INTC, CSCO, T. Toujours
-  tester un nouveau ticker avant de l'ajouter (200 = ok, 402 = payant).
+- **FMP est passé au tier Starter (juillet 2026)** : la liste blanche de
+  l'offre gratuite ne s'applique plus → tous les symboles sont accessibles.
+  Les grandes capitalisations autrefois bloquées en 402 (NEE, PG, MCD, AVGO,
+  ASML, MA, LLY…) remarchent, et les **ETF métaux PALL (palladium) et PPLT
+  (platine) sont de nouveau accessibles**. Vérifié en réel par l'utilisateur :
+  AAPL, NEE, PALL, PPLT répondent tous. On garde le montage « un appel par
+  symbole » (éprouvé, ~39 appels/génération, une goutte d'eau dans 300/min)
+  plutôt que de repasser à la requête groupée : on ne remplace pas ce qui
+  marche.
+- **Métaux (4 depuis Starter)** : or/argent via contrats à terme
+  (GCUSD/SIUSD, cours au comptant), palladium/platine via ETF (PALL/PPLT,
+  cours de part). Prix de nature différente mais comparables pour le
+  classement et la tendance.
+- La liste `STOCKS` de `api/candidates.js` est désormais diversifiée par
+  secteur (~35 actions). Plus besoin de tester la « gratuité » d'un ticker
+  avant de l'ajouter — tout FMP est ouvert avec Starter.
 
 ## Variables d'environnement (dans Vercel, PAS dans le repo)
 
@@ -100,16 +102,20 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   petits groupes sur les 2 chemins (anti-rafale), table CoinGecko complétée
   (SUI/AVAX/BNB/ONDO/HYPE), liste STOCKS reconstruite avec des tickers
   gratuits vérifiés. Outil d'audit `api/debug-prices.js` retiré.
-- Économiser le quota FMP : chaque génération / ajout ≈ 24 requêtes (250/jour).
-- La prochaine génération de recommandations utilisera la nouvelle liste
-  d'actions (TSLA, JPM, XOM, DIS, ABBV, PFE, VZ remplacent les 7 passées
-  premium).
+- **Rebranchement FMP Starter** ✅ (juillet 2026, cette session) : suite au
+  passage du compte FMP au tier Starter (300/min, tous symboles ouverts),
+  liste `STOCKS` enrichie et diversifiée par secteur (~35 actions, ancres
+  défensives de qualité + croissance), et **retour du palladium (PALL) et du
+  platine (PPLT)** → 4 métaux classés. Prompt, données d'exemple et docs mis
+  à jour. Mécanisme d'appels FMP inchangé (éprouvé). Le quota n'est plus une
+  contrainte (~39 appels/génération, largement sous 300/min). Reste à faire :
+  lancer une génération pour valider en réel l'affichage des 4 métaux et des
+  nouvelles actions.
 
 ## Prochaines étapes
 
-- **Palladium / Platine** : retirés faute de source gratuite (voir section
-  APIs ci-dessus). À réévaluer si une source gratuite apparaît, ou si
-  l'utilisateur accepte un petit forfait payant un jour.
+- **Palladium / Platine** ✅ REVENUS (juillet 2026) grâce au tier FMP Starter,
+  via leurs ETF (PALL/PPLT). Ne plus les considérer comme « retirés ».
 - **Fondamentaux détaillés** (marges, ROIC, dette) : non fournis actuellement
   (`api/market-data.js` ne donne que cours, P/E, capitalisation, BPA, moyennes
   50/200j). À enrichir avec parcimonie (1 appel/action) ou via une offre FMP

@@ -109,8 +109,8 @@ export const cryptoRisque = [
   }),
 ]
 
-// Métaux précieux : bloc unique, classement des 2 (pas de séparation sûr/risqué).
-// Palladium et platine retirés : aucune source de prix gratuite disponible.
+// Métaux précieux : bloc unique, classement (pas de séparation sûr/risqué).
+// Palladium et platine sont revenus avec le tier FMP Starter (via leurs ETF).
 export const metaux = [
   asset({
     id: 'gold', nom: 'Or (Gold)', ticker: 'GCUSD', type: 'metal', categorie: 'securitaire', confiance: 'High', evolution: 0.6,
@@ -125,6 +125,20 @@ export const metaux = [
     risques: "Plus volatil que l'or ; sensible au cycle industriel.",
     macro: "Demande industrielle liée à la transition énergétique.",
     metriques: ['Cours au comptant', 'Double usage'],
+  }),
+  asset({
+    id: 'palladium', nom: 'Palladium', ticker: 'PALL', type: 'metal', categorie: 'securitaire', confiance: 'Low', evolution: 0.9,
+    these: "Métal industriel clé des pots catalytiques automobiles (moteurs à essence).",
+    risques: "Très volatil ; menacé à long terme par la voiture électrique.",
+    macro: "Offre concentrée (Russie, Afrique du Sud), sensible aux tensions.",
+    metriques: ['Cours de l\'ETF (PALL)', 'Usage industriel auto'],
+  }),
+  asset({
+    id: 'platinum', nom: 'Platine (Platinum)', ticker: 'PPLT', type: 'metal', categorie: 'securitaire', confiance: 'Low', evolution: 0.7,
+    these: "Usage industriel (catalyseurs, hydrogène) et joaillerie ; possible rattrapage sur l'or.",
+    risques: "Demande cyclique ; dépendant de l'automobile et de l'industrie.",
+    macro: "Intérêt croissant pour l'hydrogène (piles à combustible).",
+    metriques: ['Cours de l\'ETF (PPLT)', 'Double usage industriel/joaillier'],
   }),
 ]
 

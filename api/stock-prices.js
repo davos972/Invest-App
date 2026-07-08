@@ -30,9 +30,9 @@ async function fetchOneUsd(symbol, key, attempt = 0) {
   return null
 }
 
-// Récupère les cours par petits groupes plutôt que tous d'un coup, pour ne
-// pas déclencher le blocage anti-rafale de l'offre gratuite FMP quand on
-// ajoute beaucoup de placements en même temps (ex. depuis le Calculateur).
+// Récupère les cours par petits groupes plutôt que tous d'un coup, pour rester
+// lisse vis-à-vis de la limite FMP (300/min sur Starter) quand on ajoute
+// beaucoup de placements en même temps (ex. depuis le Calculateur).
 async function fetchManyUsd(symbols, key) {
   const TAILLE_GROUPE = 6
   const results = []

@@ -38,7 +38,7 @@ Usage strictement personnel. L'application ne constitue pas un conseil financier
 
 | Source | Usage | Coût |
 |---|---|---|
-| Financial Modeling Prep (FMP) | Données fondamentales actions + cours au comptant métaux (or, argent) | Tier gratuit / payant |
+| Financial Modeling Prep (FMP) | Données actions + cours métaux (or, argent au comptant ; palladium, platine via ETF) | Tier Starter (300 req/min) |
 | CoinGecko | Données crypto toutes capitalisations (incl. micro-caps) | Gratuit |
 | ExchangeRate-API | Conversion USD → CAD en temps réel | Tier gratuit |
 | Reddit API | Sentiment communautaire (indicateur secondaire) | Gratuit |
@@ -88,14 +88,13 @@ Le prompt injecté dans Claude suit cette logique :
 |---|---|---|
 | Actions | Top 3 | Top 3 |
 | Crypto | Top 3 | Top 3 |
-| Métaux précieux | Classement des 2 (Gold, Silver) — bloc sécuritaire | — |
+| Métaux précieux | Classement des 4 (Or, Argent, Palladium, Platine) — bloc sécuritaire | — |
 
-> Palladium et Platine retirés de la sélection : aucune source de prix gratuite
-> trouvée (FMP et les alternatives testées les réservent à leurs offres payantes).
-> À réintroduire si une source gratuite apparaît, ou si un petit forfait payant
-> est envisagé un jour.
+> Palladium et Platine sont revenus dans la sélection (juillet 2026) grâce au
+> passage du compte FMP au tier Starter, via leurs ETF (PALL / PPLT). Or et
+> argent restent au cours au comptant (contrats à terme GCUSD / SIUSD).
 
-→ **14 recommandations principales** + **10 mentions honorables** (mélange actions / métaux / crypto).
+→ **16 recommandations principales** + **10 mentions honorables** (mélange actions / métaux / crypto).
 
 **Pour chaque actif recommandé, Claude produit** :
 - Nom + ticker / code.
@@ -149,7 +148,7 @@ Affichage vertical en **sections repliables** pour rester lisible sur mobile :
 3. Actions — Risqué : top 3, même format.
 4. Crypto — Sécuritaire : top 3, même format.
 5. Crypto — Risqué : top 3, même format.
-6. Métaux précieux : bloc unique, classement des 2 (Or, Argent), même format.
+6. Métaux précieux : bloc unique, classement des 4 (Or, Argent, Palladium, Platine), même format.
 7. Mentions honorables : 10 actifs mélangés, même format.
 
 Chaque carte est **cliquable** → renvoie vers la page d'analyse détaillée.
@@ -225,7 +224,7 @@ Principe directeur : **construire une app utilisable le plus tôt possible**, pu
 
 - **Stockage** : Supabase (cloud, multi-appareils).
 - **Type d'app** : web responsive d'abord, mobile native envisagée plus tard.
-- **Métaux précieux** : Gold, Silver — traités comme bloc sécuritaire unique (classement des 2), pas de distinction sécuritaire / risqué. Palladium et Platine écartés (pas de source de prix gratuite trouvée).
+- **Métaux précieux** : Or, Argent, Palladium, Platine — traités comme bloc sécuritaire unique (classement des 4), pas de distinction sécuritaire / risqué. Palladium et Platine réintégrés (juillet 2026) via le tier FMP Starter et leurs ETF (PALL / PPLT).
 - **Crypto** : toutes capitalisations, y compris micro-caps.
 - **Devise** : CAD.
 - **Logique du calculateur** : Logique B (points pondérés), pondération configurable.

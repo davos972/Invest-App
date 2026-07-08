@@ -103,9 +103,35 @@ export default function AssetDetail() {
         <p className="text-sm text-slate-300">{asset.risques || 'Non précisés.'}</p>
       </div>
 
-      <div className="mb-4 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-500">
-        📊 Sentiment (Reddit / Google Trends) — à venir en Phase 3.
-      </div>
+      <SentimentBox sentiment={asset.sentiment} />
+    </div>
+  )
+}
+
+// Sentiment social StockTwits (signal secondaire). Masqué si indisponible.
+function SentimentBox({ sentiment }) {
+  if (!sentiment) return null
+  const { messages_recents, haussiers, baissiers } = sentiment
+  const tag = haussiers + baissiers
+  let humeur = { texte: 'Ambiance mitigée', couleur: 'text-slate-300' }
+  if (tag > 0) {
+    const partHausse = haussiers / tag
+    if (partHausse >= 0.6) humeur = { texte: 'Majorité haussière', couleur: 'text-emerald-400' }
+    else if (partHausse <= 0.4) humeur = { texte: 'Majorité baissière', couleur: 'text-rose-400' }
+  }
+  return (
+    <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+      <h2 className="mb-1 text-sm font-semibold text-slate-200">💬 Sentiment social (StockTwits)</h2>
+      <p className="text-sm text-slate-300">
+        <span className={`font-semibold ${humeur.couleur}`}>{humeur.texte}</span> ·{' '}
+        {messages_recents} messages récents ·{' '}
+        <span className="text-emerald-400">{haussiers} haussiers</span> /{' '}
+        <span className="text-rose-400">{baissiers} baissiers</span>
+      </p>
+      <p className="mt-1.5 text-xs text-slate-500">
+        Signal secondaire (ambiance des particuliers), à lire avec recul — un fort engouement
+        n'est pas une garantie.
+      </p>
     </div>
   )
 }

@@ -22,6 +22,23 @@ function dedupeMentions(reco) {
   }
 }
 
+// Réinjecte le sentiment social (StockTwits) dans chaque actif recommandé, par
+// ticker, à partir des données de marché — pour qu'il soit stocké et affichable
+// dans l'app (les métaux n'en ont pas).
+function attachSentiment(reco, marketData) {
+  const map = {}
+  for (const a of marketData?.actions || []) if (a.sentiment_social) map[a.ticker] = a.sentiment_social
+  for (const c of marketData?.crypto || []) if (c.sentiment_social) map[c.ticker] = c.sentiment_social
+  const enrich = (arr) =>
+    (arr || []).map((it) => (map[it.ticker] ? { ...it, sentiment_social: map[it.ticker] } : it))
+  return {
+    ...reco,
+    actions: { securitaire: enrich(reco.actions?.securitaire), risque: enrich(reco.actions?.risque) },
+    crypto: { securitaire: enrich(reco.crypto?.securitaire), risque: enrich(reco.crypto?.risque) },
+    mentions_honorables: enrich(reco.mentions_honorables),
+  }
+}
+
 // Génère les recommandations de la semaine.
 // Renvoie { recommendations, marketData } : les recommandations prêtes à
 // stocker, et les données de marché (réutilisées pour l'historique des prix).
@@ -47,5 +64,6 @@ export async function generateWeeklyRecommendations(model) {
   if (!textBlock) {
     throw new Error("L'IA n'a pas renvoyé de contenu exploitable.")
   }
-  return { recommendations: dedupeMentions(JSON.parse(textBlock.text)), marketData }
+  const reco = attachSentiment(dedupeMentions(JSON.parse(textBlock.text)), marketData)
+  return { recommendations: reco, marketData }
 }

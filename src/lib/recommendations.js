@@ -15,6 +15,7 @@ function normalize(a) {
     evolution: a.evolution_semaine_pct ?? 0,
     these: a.resume_these,
     risques: a.points_risque,
+    sentiment: a.sentiment_social || null,
   }
 }
 

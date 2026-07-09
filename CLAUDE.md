@@ -112,6 +112,43 @@ d'allocation, suivi de portefeuille. Devise **CAD**. Détails complets dans
   lancer une génération pour valider en réel l'affichage des 4 métaux et des
   nouvelles actions.
 
+## Appli Android (APK) — juillet 2026
+
+- **Principe** : l'APK est une « coquille » TWA (Trusted Web Activity, méthode
+  officielle de Google, générée par Bubblewrap) qui ouvre le site
+  https://invest-app-silk.vercel.app en plein écran. L'appli affiche donc
+  TOUJOURS la dernière version du site : un déploiement Vercel suffit, pas
+  besoin de refaire l'APK (sauf pour changer icône / nom / couleurs).
+  Nécessite Chrome installé sur le téléphone.
+- **PWA** : le site a `public/manifest.webmanifest` + icônes
+  (`public/icons/`, courbe verte sur fond sombre) + balises dans `index.html`.
+- **Plein écran sans barre de navigateur** : Android vérifie
+  `public/.well-known/assetlinks.json` (empreinte SHA256 de la clé de
+  signature + paquet `com.davos.investapp`). APK signé avec une autre clé =
+  l'appli marche mais avec la barre de Chrome visible.
+- **Projet Android** : dossier `android/` (généré par Bubblewrap, versionné).
+  `android/twa-manifest.json` = config source ; pour changer icône/nom,
+  modifier puis régénérer (`bubblewrap update`) et committer.
+- **Fabrication** : GitHub Action `.github/workflows/build-apk.yml`
+  (onglet Actions → « Fabriquer l'APK Android » → Run workflow). Compile,
+  signe et publie l'APK dans la **release GitHub « apk »** :
+  https://github.com/davos972/Invest-App/releases/tag/apk (téléchargeable
+  directement depuis le téléphone). Pourquoi GitHub et pas local : le SDK
+  Android (dl.google.com) est bloqué dans l'environnement Claude ; les
+  runners GitHub l'ont préinstallé.
+- **Clé de signature (IMPORTANT)** : le dépôt est PUBLIC → la clé
+  (`android/android.keystore`, alias `android`) n'est JAMAIS committée
+  (`.gitignore`). Elle vit dans 2 secrets GitHub (Settings → Secrets and
+  variables → Actions) : `ANDROID_KEYSTORE_BASE64` (fichier encodé) et
+  `ANDROID_KEYSTORE_PASSWORD`. L'utilisateur garde aussi une copie du
+  fichier. Toujours signer avec CETTE clé (sinon Android refuse la mise à
+  jour et assetlinks ne correspond plus). Empreinte SHA256 publiée :
+  `8B:EB:DF:17:9D:18:F9:16:C1:97:D7:C7:06:18:04:88:35:45:53:C5:9F:E7:F2:D9:1B:CC:94:95:5D:60:7B:D4`.
+- **Nouvelle version de l'APK** (rare) : incrémenter `appVersionCode` (+1)
+  et `appVersion`/`appVersionName` dans `android/twa-manifest.json` ET
+  `versionCode`/`versionName` dans `android/app/build.gradle`, committer,
+  relancer le workflow, réinstaller depuis la release.
+
 ## Screening dynamique des actions (juillet 2026)
 
 - **`api/screener.js`** : les actions candidates ne viennent plus d'une liste

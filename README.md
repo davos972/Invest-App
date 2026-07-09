@@ -216,7 +216,11 @@ Principe directeur : **construire une app utilisable le plus tôt possible**, pu
 → *Résultat : l'app devient un véritable outil d'aide à la décision.*
 
 ### Phase 4 — Évolution (plus tard)
-- Migration vers app mobile native (React Native). La logique métier et les appels API de la web app sont réutilisables.
+- ✅ (juillet 2026) **Appli Android (APK)** disponible sans réécriture : coquille
+  TWA (Bubblewrap) qui ouvre le site en plein écran — projet dans `android/`,
+  fabrication via GitHub Actions, APK publié dans la release GitHub « apk ».
+  L'appli suit automatiquement chaque déploiement du site.
+- Migration vers app mobile native (React Native) si un jour nécessaire. La logique métier et les appels API de la web app sont réutilisables.
 
 ---
 

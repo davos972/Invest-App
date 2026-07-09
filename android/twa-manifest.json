@@ -1,0 +1,43 @@
+{
+  "packageId": "com.davos.investapp",
+  "host": "invest-app-silk.vercel.app",
+  "name": "Investment Advisor",
+  "launcherName": "Invest",
+  "display": "standalone",
+  "themeColor": "#020617",
+  "themeColorDark": "#020617",
+  "navigationColor": "#020617",
+  "navigationColorDark": "#020617",
+  "navigationDividerColor": "#020617",
+  "navigationDividerColorDark": "#020617",
+  "backgroundColor": "#020617",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://raw.githubusercontent.com/davos972/Invest-App/main/public/icons/icon-512.png",
+  "maskableIconUrl": "https://raw.githubusercontent.com/davos972/Invest-App/main/public/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersion": "1.0.0",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://raw.githubusercontent.com/davos972/Invest-App/main/public/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://invest-app-silk.vercel.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

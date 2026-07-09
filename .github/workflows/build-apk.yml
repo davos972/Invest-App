@@ -1,0 +1,108 @@
+# Fabrique l'APK Android (coquille TWA qui ouvre https://invest-app-silk.vercel.app).
+#
+# Déclenchement : à la main, onglet Actions de GitHub → « Fabriquer l'APK Android »
+# → bouton « Run workflow ».
+#
+# Deux secrets du dépôt sont nécessaires pour l'APK officiel
+# (Settings → Secrets and variables → Actions) :
+#   - ANDROID_KEYSTORE_BASE64  : la clé de signature encodée en base64
+#   - ANDROID_KEYSTORE_PASSWORD : le mot de passe de cette clé
+# La clé doit rester la même à vie : c'est elle qui prouve que chaque nouvelle
+# version de l'appli vient bien de nous (et son empreinte est publiée dans
+# public/.well-known/assetlinks.json pour l'ouverture en plein écran).
+#
+# Résultat : l'APK signé est attaché à la « release » GitHub nommée « apk »
+# → téléchargeable directement depuis un téléphone Android.
+
+name: Fabriquer l'APK Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_sans_cle:
+        description: "Test technique : clé jetable (APK NON officiel, ne pas installer)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Préparer la clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TEST_SANS_CLE: ${{ inputs.test_sans_cle }}
+        run: |
+          if [ "$TEST_SANS_CLE" = "true" ]; then
+            echo "Mode TEST : création d'une clé jetable (APK non officiel)."
+            keytool -genkeypair -keystore android/android.keystore -alias android \
+              -keyalg RSA -keysize 2048 -validity 30 -storepass jetable123 \
+              -keypass jetable123 -dname "CN=Test jetable"
+            echo "KS_PASS=jetable123" >> "$GITHUB_ENV"
+            echo "OFFICIEL=false" >> "$GITHUB_ENV"
+          elif [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/android.keystore
+            echo "KS_PASS=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "OFFICIEL=true" >> "$GITHUB_ENV"
+          else
+            echo "::error::Secrets manquants. Ajoute ANDROID_KEYSTORE_BASE64 et ANDROID_KEYSTORE_PASSWORD dans Settings → Secrets and variables → Actions, ou lance en mode test_sans_cle."
+            exit 1
+          fi
+
+      - name: Compiler l'appli
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Signer l'APK
+        run: |
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/zipalign" -f -p 4 \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            invest-app-aligned.apk
+          "$BT/apksigner" sign \
+            --ks android/android.keystore --ks-key-alias android \
+            --ks-pass "pass:$KS_PASS" --key-pass "pass:$KS_PASS" \
+            --out invest-app.apk invest-app-aligned.apk
+          "$BT/apksigner" verify --print-certs invest-app.apk | head -5
+
+      - name: Vérifier que le site publie bien l'empreinte (assetlinks)
+        run: |
+          echo "— assetlinks.json publié sur le site :"
+          curl -sf https://invest-app-silk.vercel.app/.well-known/assetlinks.json || echo "(inaccessible — vérifier le déploiement Vercel)"
+          echo
+          echo "— empreinte de l'APK fabriqué :"
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/apksigner" verify --print-certs invest-app.apk | grep SHA-256 || true
+
+      - name: Garder l'APK en pièce jointe du run
+        uses: actions/upload-artifact@v4
+        with:
+          name: invest-app-apk
+          path: invest-app.apk
+
+      - name: Publier l'APK dans la release « apk » (téléchargeable au téléphone)
+        if: env.OFFICIEL == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view apk --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create apk --repo "$GITHUB_REPOSITORY" \
+              --title "Appli Android (APK)" \
+              --notes "APK de l'appli Investment Advisor. Télécharger invest-app.apk sur le téléphone puis l'installer (autoriser l'installation depuis le navigateur si demandé). L'appli affiche toujours la dernière version du site — pas besoin de réinstaller après les mises à jour."
+          gh release upload apk invest-app.apk --repo "$GITHUB_REPOSITORY" --clobber
+          echo "APK publié : https://github.com/$GITHUB_REPOSITORY/releases/tag/apk"

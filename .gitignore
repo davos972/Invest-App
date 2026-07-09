@@ -10,9 +10,12 @@ dist-ssr
 .env.local
 .env.*.local
 
-# Fabrication de l'APK Android (dépôt PUBLIC : la clé de signature et le
-# projet généré par Bubblewrap restent hors de GitHub)
-android/
+# APK Android : le projet (android/) est versionné, mais JAMAIS la clé de
+# signature (dépôt public !) ni les fichiers produits par la compilation
+android/android.keystore
+android/.gradle/
+android/build/
+android/app/build/
 
 # Fichiers système / éditeurs
 .DS_Store

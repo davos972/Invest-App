@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.davos.investapp",
+      "sha256_cert_fingerprints": [
+        "8B:EB:DF:17:9D:18:F9:16:C1:97:D7:C7:06:18:04:88:35:45:53:C5:9F:E7:F2:D9:1B:CC:94:95:5D:60:7B:D4"
+      ]
+    }
+  }
+]

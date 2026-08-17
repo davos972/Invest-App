@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
+import {
+  supabase,
+  isSupabaseConfigured,
+  estUneErreurReseau,
+  diagnostiquerReseau,
+  supabaseHost,
+} from '../lib/supabase.js'
 
 // Page de connexion / création de compte.
 export default function Login() {
@@ -28,7 +34,14 @@ export default function Login() {
         // La redirection se fait automatiquement (l'app détecte la session).
       }
     } catch (err) {
-      setMessage({ type: 'error', text: traduireErreur(err.message) })
+      // Si le navigateur n'a même pas réussi à joindre le serveur, on cherche
+      // pourquoi et on l'explique en clair, au lieu du sec « Failed to fetch ».
+      if (estUneErreurReseau(err.message)) {
+        const diagnostic = await diagnostiquerReseau()
+        setMessage({ type: 'error', text: diagnostic.text, detail: err.message })
+      } else {
+        setMessage({ type: 'error', text: traduireErreur(err.message) })
+      }
     } finally {
       setBusy(false)
     }
@@ -80,13 +93,19 @@ export default function Login() {
           </label>
 
           {message && (
-            <p
+            <div
               className={`text-sm ${
                 message.type === 'error' ? 'text-rose-400' : 'text-emerald-400'
               }`}
             >
-              {message.text}
-            </p>
+              <p>{message.text}</p>
+              {message.detail && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Détail technique : {message.detail}
+                  {supabaseHost ? ` (${supabaseHost})` : ''}
+                </p>
+              )}
+            </div>
           )}
 
           <button
